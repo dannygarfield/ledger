@@ -22,13 +22,15 @@ type transaction struct {
 //
 // It lets us "pretty-print" this structure more easily in fmt.Printf.
 func (t transaction) String() string {
-	return fmt.Sprintf("from=%s,to=%s,date=%s,amt=%d", t.from, t.to, t.date, t.amt)
+	return fmt.Sprintf("from=%s,to=%s,date=%s,amt=%d\n", t.from, t.to, t.date, t.amt)
 }
 
 // ledger represents a double-entry accounting journal.
 type ledger []transaction
 
 func main() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+
 	ledger := ledger{}
 
 	var from = flag.String("from", "", "bucket from which the amount is taken")
@@ -53,8 +55,30 @@ func main() {
 	}
 	fmt.Printf("transactions: %d\n", count)
 
-	tx := transaction{from: *from, to: *to, date: d, amt: *amt}
-	ledger = append(ledger, tx)
+	// insert the transaction into the database
+	q := "INSERT INTO transactions (origin, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
+	if _, err := db.Exec(q, *from, *to, d, *amt); err != nil {
+		log.Fatalf("inserting the transaction: %v", err)
+	}
+
+	// query the database for all transactions
+	rows, err := db.Query("SELECT origin, destination, happened_at, amount FROM transactions;")
+	if err != nil {
+		log.Fatalf("fetching all transactions: %v", err)
+	}
+	for rows.Next() {
+		tx := transaction{}
+		var dstring string
+		if err := rows.Scan(&tx.from, &tx.to, &dstring, &tx.amt); err != nil {
+			log.Fatalf("unmarshaling row: %v", err)
+		}
+		d, err := time.Parse("2006-01-02", *date)
+		if err != nil {
+			log.Fatalf("parsing time: %v", err)
+		}
+		tx.date = d
+		ledger = append(ledger, tx)
+	}
 
 	fmt.Printf("ledger: %s\n", ledger)
 }
