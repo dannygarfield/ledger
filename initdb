@@ -1,0 +1,9 @@
+#!/bin/sh
+
+DBFILE=db.sqlite3
+
+rm -f $DBFILE
+
+echo "
+CREATE TABLE transactions (origin TEXT, destination TEXT, happened_at TEXT, amount TEXT);
+" | sqlite3 $DBFILE
