@@ -1,10 +1,13 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // transaction represents a double-entry accounting item in the ledger.
@@ -19,7 +22,7 @@ type transaction struct {
 //
 // It lets us "pretty-print" this structure more easily in fmt.Printf.
 func (t transaction) String() string {
-    return fmt.Sprintf("from=%s,to=%s,date=%s,amt=%d", t.from, t.to, t.date, t.amt)
+	return fmt.Sprintf("from=%s,to=%s,date=%s,amt=%d", t.from, t.to, t.date, t.amt)
 }
 
 // ledger represents a double-entry accounting journal.
@@ -38,6 +41,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("parsing time: %v", err)
 	}
+
+	db, err := sql.Open("sqlite3", "./db.sqlite3")
+	if err != nil {
+		log.Fatalf("opening database: %v", err)
+	}
+	row := db.QueryRow("SELECT COUNT(*) FROM transactions;")
+	var count int
+	if err := row.Scan(&count); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("transactions: %d\n", count)
 
 	tx := transaction{from: *from, to: *to, date: d, amt: *amt}
 	ledger = append(ledger, tx)
