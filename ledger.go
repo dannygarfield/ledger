@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"time"
 )
 
 func main() {
@@ -12,5 +14,10 @@ func main() {
 	var amt = flag.Uint("amt", 0, "amount in cents of the transaction")
 	flag.Parse()
 
-	fmt.Printf("value of flags: from=%s,to=%s,date=%s,amt=%d\n", *from, *to, *date, *amt)
+	d, err := time.Parse("2006-01-02", *date)
+	if err != nil {
+		log.Fatalf("parsing time: %v", err)
+	}
+
+	fmt.Printf("value of flags: from=%s,to=%s,date=%s,amt=%d\n", *from, *to, d, *amt)
 }
