@@ -12,10 +12,17 @@ import (
 
 // transaction represents a double-entry accounting item in the ledger.
 type transaction struct {
+<<<<<<< HEAD
 	source	string
 	destination	string
 	date	time.Time
 	amount	uint
+=======
+	from string
+	to   string
+	date time.Time
+	amt  uint
+>>>>>>> db2c7deb31989a877cf44868fbc6b6663c237b2a
 }
 
 // String implements fmt.Stringer.
@@ -36,6 +43,7 @@ func main() {
 	insertMode := flag.Bool("insert", false, "insert a transaction")
 	summaryMode := flag.Bool("summary", false, "get balances of all buckets")
 
+<<<<<<< HEAD
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	date := flag.String("date", "", "date of transaction")
@@ -53,9 +61,49 @@ func main() {
 		return
 	} else if *insertMode {
 		d, err := time.Parse("2006-01-02", *date)
+=======
+	origin := flag.String("origin", "", "bucket from which the amount is taken")
+	dest := flag.String("dest", "", "bucket into which the amount is deposited")
+	date := flag.String("date", "", "date of transaction")
+	amt := flag.Uint("amt", 0, "amount in cents of the transaction")
+	flag.Parse()
+
+	if *insertMode && *summaryMode {
+		log.Printf("only use one of -insert or -summary")
+		return
+	} else if !*insertMode && !*summaryMode {
+		log.Printf("specify one of -insert or -summary")
+		return
+	} else if *insertMode {
+		d, err := time.Parse("2006-01-02", *date)
 		if err != nil {
 			log.Fatalf("parsing time: %v", err)
 		}
+
+		db, err := sql.Open("sqlite3", "./db.sqlite3")
+		if err != nil {
+			log.Fatalf("opening database: %v", err)
+		}
+		row := db.QueryRow("SELECT COUNT(*) FROM transactions;")
+		var count int
+		if err := row.Scan(&count); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("transactions: %d\n", count)
+
+		// insert the transaction into the database
+		q := "INSERT INTO transactions (origin, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
+		if _, err := db.Exec(q, *origin, *dest, d, *amt); err != nil {
+			log.Fatalf("inserting the transaction: %v", err)
+		}
+
+		// query the database for all transactions
+		rows, err := db.Query("SELECT origin, destination, happened_at, amount FROM transactions;")
+>>>>>>> db2c7deb31989a877cf44868fbc6b6663c237b2a
+		if err != nil {
+			log.Fatalf("fetching all transactions: %v", err)
+		}
+<<<<<<< HEAD
 
 		db, err := sql.Open("sqlite3", "./db.sqlite3")
 		if err != nil {
@@ -141,6 +189,37 @@ func main() {
     		log.Printf("%s: %d \n", account, total)
 		}
 	}
+=======
+		for rows.Next() {
+			tx := transaction{}
+			var dstring string
+			if err := rows.Scan(&tx.from, &tx.to, &dstring, &tx.amt); err != nil {
+				log.Fatalf("unmarshaling row: %v", err)
+			}
+			d, err := time.Parse("2006-01-02", *date)
+			if err != nil {
+				log.Fatalf("parsing time: %v", err)
+			}
+			tx.date = d
+			ledger = append(ledger, tx)
+		}
+
+		fmt.Printf("ledger: %s\n", ledger)
+	} else if *summaryMode {
+		const q = `
+SELECT SUM(a.amount) FROM (
+	SELECT -amount AS amount
+	FROM transactions WHERE origin = "checking"
+UNION
+	SELECT amount
+	FROM transactions WHERE destination = "checking"
+) as a;`
+		// execute one or more queries to summarize all buckets
+		// print each bucket
+		log.Printf("TODO")
+	}
+
+>>>>>>> db2c7deb31989a877cf44868fbc6b6663c237b2a
 }
 
 // SELECT sum(amount), account FROM (
