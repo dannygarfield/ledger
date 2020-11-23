@@ -40,6 +40,9 @@ func main() {
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	date := flag.String("date", "", "date of transaction")
 	amount := flag.Uint("amount", 0, "amount in cents of the transaction")
+
+	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
+
 	flag.Parse()
 
 	if *insertMode && *summaryMode {
@@ -65,7 +68,7 @@ func main() {
 		}
 		fmt.Printf("transactions: %d\n", count)
 
-		// insert the transaction indestination the database
+		// insert the transaction into the database
 		q := "INSERT INTO transactions (source, destination, date, amount) VALUES ($1, $2, $3, $4);"
 		if _, err := db.Exec(q, *source, *destination, d, *amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
@@ -91,18 +94,58 @@ func main() {
 		}
 
 		fmt.Printf("ledger: %s\n", ledger)
-	} else if *summaryMode {
-		const q = `
-SELECT SUM(a.amount) FROM (
-	SELECT -amount AS amount
-	FROM transactions WHERE origin = "checking"
-UNION
-	SELECT amount
-	FROM transactions WHERE destination = "checking"
-) as a;`
+	} else if *summaryMode && *bucket != "" {
 		// execute one or more queries to summarize all buckets
 		// print each bucket
-		log.Printf("TODO")
-	}
+		db, err := sql.Open("sqlite3", "./db.sqlite3")
+		if err != nil {
+			log.Fatalf("opening database: %v", err)
+		}
+		q := `
+		SELECT sum(amount) FROM (
+		   select amount from transactions where destination = ?
+		   UNION
+		   select -amount from transactions where source = ?
+		   );`
+		row := db.QueryRow(q, bucket, bucket)
+		var sum int
+		if err := row.Scan(&sum); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("total amount, all time, for '%v': %d\n", *bucket, sum)
+	} else if *summaryMode {
+		fmt.Println("Summary of all accounts, all time")
 
+		db, err := sql.Open("sqlite3", "./db.sqlite3")
+		if err != nil {
+			log.Fatalf("opening database: %v", err)
+		}
+		q := `SELECT sum(amount), account FROM (
+			SELECT amount, destination AS account FROM transactions
+			UNION
+			SELECT -amount, source AS account FROM transactions
+			)
+			GROUP BY account;`
+		rows, err := db.Query(q)
+		if err != nil {
+			log.Fatalf("summarizing transactions: %v", err)
+		}
+		for rows.Next() {
+			var (
+				total int
+				account string
+			)
+			if err := rows.Scan(&total, &account); err != nil {
+        		log.Fatal(err)
+    		}
+    		log.Printf("%s: %d \n", account, total)
+		}
+	}
 }
+
+// SELECT sum(amount), account FROM (
+//    select amount, destination AS account from transactions
+//    UNION
+//    select -amount, source AS account from transactions
+//    )
+//    GROUP BY account;
