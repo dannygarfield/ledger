@@ -12,14 +12,12 @@ import (
 
 // transaction represents a double-entry accounting item in the ledger.
 type transaction struct {
-	source	string
-	destination	string
-	date	time.Time
-	amount	uint
+	source      string
+	destination string
+	date        time.Time
+	amount      uint
 }
 
-// String implements fmt.Stringer.
-//
 // It lets us "pretty-print" this structure more easily in fmt.Printf.
 func (t transaction) String() string {
 	return fmt.Sprintf("source=%s,destination=%s,date=%s,amount=%d\n", t.source, t.destination, t.date, t.amount)
@@ -45,6 +43,11 @@ func main() {
 
 	flag.Parse()
 
+	db, err := sql.Open("sqlite3", "./db.sqlite3")
+	if err != nil {
+		log.Fatalf("opening database: %v", err)
+	}
+
 	if *insertMode && *summaryMode {
 		log.Printf("only use one of -insert or -summary")
 		return
@@ -55,11 +58,6 @@ func main() {
 		d, err := time.Parse("2006-01-02", *date)
 		if err != nil {
 			log.Fatalf("parsing time: %v", err)
-		}
-
-		db, err := sql.Open("sqlite3", "./db.sqlite3")
-		if err != nil {
-			log.Fatalf("opening database: %v", err)
 		}
 		row := db.QueryRow("SELECT COUNT(*) FROM transactions;")
 		var count int
@@ -96,11 +94,6 @@ func main() {
 		fmt.Printf("ledger: %s\n", ledger)
 	} else if *summaryMode && *bucket != "" {
 		// execute one or more queries to summarize all buckets
-		// print each bucket
-		db, err := sql.Open("sqlite3", "./db.sqlite3")
-		if err != nil {
-			log.Fatalf("opening database: %v", err)
-		}
 		q := `
 		SELECT sum(amount) FROM (
 		   select amount from transactions where destination = ?
@@ -115,11 +108,6 @@ func main() {
 		fmt.Printf("total amount, all time, for '%v': %d\n", *bucket, sum)
 	} else if *summaryMode {
 		fmt.Println("Summary of all accounts, all time")
-
-		db, err := sql.Open("sqlite3", "./db.sqlite3")
-		if err != nil {
-			log.Fatalf("opening database: %v", err)
-		}
 		q := `SELECT sum(amount), account FROM (
 			SELECT amount, destination AS account FROM transactions
 			UNION
@@ -132,13 +120,13 @@ func main() {
 		}
 		for rows.Next() {
 			var (
-				total int
+				total   int
 				account string
 			)
 			if err := rows.Scan(&total, &account); err != nil {
-        		log.Fatal(err)
-    		}
-    		log.Printf("%s: %d \n", account, total)
+				log.Fatal(err)
+			}
+			log.Printf("%s: %d \n", account, total)
 		}
 	}
 }
