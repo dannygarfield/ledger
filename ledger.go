@@ -30,6 +30,7 @@ func main() {
 	// define flags for input from the command line
 	insertMode := flag.Bool("insert", false, "insert a transaction")
 	summaryMode := flag.Bool("summary", false, "get balances of all buckets")
+	through_date := flag.String("through_date", "", "date through which to summarize")
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	happened_at := flag.String("happened_at", "", "date of transaction")
@@ -76,7 +77,6 @@ func main() {
 		if err := transaction.Commit(); err != nil {
 			log.Fatalf("committing the transaction: %v", err)
 		}
-
 	} else if *insertMode {
 		// insert a transaction to the db
 		d, err := time.Parse("2006-01-02", *happened_at)
@@ -87,6 +87,32 @@ func main() {
 		if _, err := db.Exec(q, *source, *destination, d, *amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
+	} else if *summaryMode && *through_date != "" {
+		// summarize all buckets through a given date
+		td, err := time.Parse("2006-01-02", *through_date)
+		if err != nil {
+			log.Fatalf("parsing time: %v", err)
+		}
+		q := `SELECT account, sum(amount) FROM (
+		    SELECT amount, happened_at, destination AS account FROM transactions
+		    UNION ALL
+		    SELECT -amount, happened_at, source AS account FROM transactions
+		    )
+		    WHERE date(happened_at) <= date($1)
+		    GROUP BY account
+			ORDER BY sum(amount) DESC;`
+		rows, err := db.Query(q, td)
+		if err != nil {
+			log.Fatalf("summarizing transactions: %v", err)
+		}
+		for rows.Next() {
+			var account string
+			var total int
+			if err := rows.Scan(&account, &total); err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("%s: %d \n", account, total)
+		}
 	} else if *summaryMode && *bucket != "" {
 		// summarize a single given bucket through today
 		q := `SELECT sum(amount) FROM (
@@ -95,7 +121,7 @@ func main() {
 		    SELECT -amount, happened_at from transactions where source = $1
 			)
 		    WHERE date(happened_at) <= date("now")
-		    `
+			ORDER BY sum(amount) DESC;`
 		row := db.QueryRow(q, bucket)
 		var sum int
 		if err := row.Scan(&sum); err != nil {
@@ -112,14 +138,14 @@ func main() {
 		    )
 		    WHERE date(happened_at) <= date("now")
 		    GROUP BY account
-			;`
+			ORDER BY sum(amount) DESC;`
 		rows, err := db.Query(q)
 		if err != nil {
 			log.Fatalf("summarizing transactions: %v", err)
 		}
 		for rows.Next() {
-			var total int
 			var account string
+			var total int
 			if err := rows.Scan(&account, &total); err != nil {
 				log.Fatal(err)
 			}
