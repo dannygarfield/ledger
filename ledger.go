@@ -18,12 +18,6 @@ type transaction struct {
 	amount      uint
 }
 
-// tranaction implements fmt.Stringer
-// It lets us "pretty-print" this structure more easily in fmt.Printf.
-func (t transaction) String() string {
-	return fmt.Sprintf("source=%s,destination=%s,happened_at=%s,amount=%d\n", t.source, t.destination, t.happened_at, t.amount)
-}
-
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
@@ -67,8 +61,6 @@ func main() {
 		// add transaction once per month for two years
 		end_date := time.Now().AddDate(2, 0, 0)
 		for tx_date := d; tx_date.Before(end_date); tx_date = tx_date.AddDate(0, 1, 0) {
-			fmt.Println("end_date:", end_date)
-			fmt.Println("tx_date:", tx_date)
 			if _, err := transaction.Exec(q, *source, *destination, tx_date, *amount); err != nil {
 				log.Fatalf("inserting the transaction: %v", err)
 			}
