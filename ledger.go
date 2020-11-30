@@ -35,6 +35,7 @@ func main() {
 	happened_at := flag.String("happened_at", "", "date of transaction")
 	amount := flag.Uint("amount", 0, "amount in cents of the transaction")
 	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
+	repeat := flag.Bool("repeat", false, "make a transaction repeating")
 	flag.Parse()
 
 	// open connection to the db
@@ -51,8 +52,33 @@ func main() {
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary")
 		return
+	} else if *insertMode && *repeat {
+	 	// insert repeating 1x/month through 24 months from today
+		transaction, err := db.Begin()
+		if err != nil {
+			log.Fatal("beginning the transaction: %v", err)
+		}
+		d, err := time.Parse("2006-01-02", *happened_at)
+		if err != nil {
+			log.Fatalf("parsing time: %v", err)
+		}
+		q := "INSERT INTO transactions (source, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
+		// add transaction once per month for two years
+		end_date := time.Now().AddDate(2, 0, 0)
+		for tx_date := d; tx_date.Before(end_date); tx_date = tx_date.AddDate(0, 1, 0) {
+			fmt.Println("end_date:", end_date)
+			fmt.Println("tx_date:", tx_date)
+			if _, err := transaction.Exec(q, *source, *destination, tx_date, *amount); err != nil {
+				log.Fatalf("inserting the transaction: %v", err)
+			}
+		}
+		// commit the transaction
+		if err := transaction.Commit(); err != nil {
+			log.Fatalf("committing the transaction: %v", err)
+		}
+
 	} else if *insertMode {
-		// insert a transaction to the db (and to our ledger type)
+		// insert a transaction to the db
 		d, err := time.Parse("2006-01-02", *happened_at)
 		if err != nil {
 			log.Fatalf("parsing time: %v", err)
