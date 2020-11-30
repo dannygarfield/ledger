@@ -5,5 +5,5 @@ DBFILE=db.sqlite3
 rm -f $DBFILE
 
 echo "
-CREATE TABLE transactions (source TEXT, destination TEXT, date TEXT, amount TEXT);
+CREATE TABLE transactions (source TEXT, destination TEXT, happened_at TEXT, amount TEXT);
 " | sqlite3 $DBFILE
