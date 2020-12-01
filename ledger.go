@@ -12,10 +12,10 @@ import (
 
 // transaction represents a double-entry accounting item in the ledger.
 type transaction struct {
-	source      string
-	destination string
-	happened_at time.Time
-	amount      uint
+	source		string
+	destination	string
+	happened_at	time.Time
+	amount		int
 }
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	happened_at := flag.String("happened_at", "", "date of transaction")
-	amount := flag.Uint("amount", 0, "amount in cents of the transaction")
+	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
 	repeat := flag.Bool("repeat", false, "make a transaction repeating")
 	flag.Parse()
@@ -51,7 +51,7 @@ func main() {
 		// insert repeating 1x/month through 24 months from today
 		transaction, err := db.Begin()
 		if err != nil {
-			log.Fatal("beginning the transaction: %v", err)
+			log.Fatalf("beginning the transaction: %v", err)
 		}
 		d, err := time.Parse("2006-01-02", *happened_at)
 		if err != nil {
@@ -75,8 +75,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("parsing time: %v", err)
 		}
-		q := "INSERT INTO transactions (source, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
-		if _, err := db.Exec(q, *source, *destination, d, *amount); err != nil {
+		if err := insert(db, *source, *destination, d, *amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
 	} else if *summaryMode && *through_date != "" {
@@ -144,4 +143,27 @@ func main() {
 			log.Printf("%s: %d \n", account, total)
 		}
 	}
+}
+
+func insert(db *sql.DB, source string, destination string, happenedAt time.Time, amount int) error {
+	q := "INSERT INTO transactions (source, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
+	_, err := db.Exec(q, source, destination, happenedAt, amount)
+	return err
+}
+
+func summary(db *sql.DB, bucket string, through time.Time) (int, error) {
+	q := `
+SELECT sum(amount) FROM (
+SELECT amount, happened_at FROM transactions WHERE destination = $1
+UNION ALL
+SELECT -amount, happened_at from transactions where source = $1
+)
+WHERE date(happened_at) <= date($2)
+ORDER BY sum(amount) DESC;`
+	row := db.QueryRow(q, bucket, through)
+	var sum int
+	if err := row.Scan(&sum); err != nil {
+		return -1, err
+	}
+	return sum, nil
 }
