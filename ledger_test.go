@@ -12,10 +12,7 @@ import (
 func TestInsertOne(t *testing.T) {
 	// Given
 	db := testdb(t)
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
+	tx := beginTx(db, t)
 	// When
 	e := entry {
 		source: "checking",
@@ -68,10 +65,7 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 			amount:      50000,
 		},
 	}
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
+	tx := beginTx(db, t)
 	for _, e := range entries {
 		err := insert(tx, e)
 		assertNoError(t, err, "inserting transaction into tx")
@@ -108,6 +102,16 @@ func testdb(t *testing.T) *sql.DB {
 		t.Fatalf("loading schema: %v", err)
 	}
 	return db
+}
+
+func beginTx(db *sql.DB, t *testing.T) *sql.Tx {
+	t.Helper()
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("beginning the sql transaction")
+	}
+	return tx
 }
 
 func assertNoError(t *testing.T, err error, msg string) {
