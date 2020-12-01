@@ -11,11 +11,11 @@ import (
 )
 
 // transaction represents a double-entry accounting item in the ledger.
-type transaction struct {
-	source		string
-	destination	string
-	happened_at	time.Time
-	amount		int
+type entry struct {
+	source      string
+	destination string
+	happened_at time.Time
+	amount      int
 }
 
 func main() {
@@ -49,7 +49,7 @@ func main() {
 		return
 	} else if *insertMode && *repeat {
 		// insert repeating 1x/month through 24 months from today
-		transaction, err := db.Begin()
+		tx, err := db.Begin()
 		if err != nil {
 			log.Fatalf("beginning the transaction: %v", err)
 		}
@@ -61,12 +61,12 @@ func main() {
 		// add transaction once per month for two years
 		end_date := time.Now().AddDate(2, 0, 0)
 		for tx_date := d; tx_date.Before(end_date); tx_date = tx_date.AddDate(0, 1, 0) {
-			if _, err := transaction.Exec(q, *source, *destination, tx_date, *amount); err != nil {
+			if _, err := tx.Exec(q, *source, *destination, tx_date, *amount); err != nil {
 				log.Fatalf("inserting the transaction: %v", err)
 			}
 		}
 		// commit the transaction
-		if err := transaction.Commit(); err != nil {
+		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing the transaction: %v", err)
 		}
 	} else if *insertMode {
@@ -75,7 +75,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("parsing time: %v", err)
 		}
-		if err := insert(db, *source, *destination, d, *amount); err != nil {
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatalf("beginning the sql transaction")
+		}
+		if err := insert(tx, *source, *destination, d, *amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
 	} else if *summaryMode && *through_date != "" {
@@ -145,13 +149,31 @@ func main() {
 	}
 }
 
-func insert(db *sql.DB, source string, destination string, happenedAt time.Time, amount int) error {
-	q := "INSERT INTO transactions (source, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
-	_, err := db.Exec(q, source, destination, happenedAt, amount)
+// insert a single transaction
+func insert(tx *sql.Tx, source string, destination string, happenedAt time.Time, amount int) error {
+	// tx, err := db.Begin()
+	// if err != nil {
+	// 	log.Fatalf("beginning the sql transaction")
+	// }
+	q :=
+		`INSERT INTO transactions
+(source, destination, happened_at, amount)
+VALUES ($1, $2, $3, $4);`
+	_, err := tx.Exec(q, source, destination, happenedAt, amount)
+	if err != nil {
+		log.Fatalf("executing the query")
+	}
+	// if err := tx.Commit(); err != nil {
+	// 	log.Fatalf("committing the transaction: %v", err)
+	// }
 	return err
 }
 
 func summary(db *sql.DB, bucket string, through time.Time) (int, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("beginning the sql transaction")
+	}
 	q := `
 SELECT sum(amount) FROM (
 SELECT amount, happened_at FROM transactions WHERE destination = $1
@@ -160,10 +182,48 @@ SELECT -amount, happened_at from transactions where source = $1
 )
 WHERE date(happened_at) <= date($2)
 ORDER BY sum(amount) DESC;`
-	row := db.QueryRow(q, bucket, through)
+	row := tx.QueryRow(q, bucket, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
 		return -1, err
 	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction")
+	}
 	return sum, nil
+}
+
+func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, error) {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("beginning the sql transaction")
+	}
+	q := `SELECT account, sum(amount) FROM (
+		SELECT amount, happened_at, destination AS account FROM transactions
+		UNION ALL
+		SELECT -amount, happened_at, source AS account FROM transactions
+		)
+		WHERE date(happened_at) <= date($1)
+		GROUP BY account
+		ORDER BY sum(amount) DESC;`
+	rows, err := tx.Query(q, through)
+	if err != nil {
+		log.Fatalf("summarizing transactions: %v", err)
+	}
+
+	result := make(map[string]int)
+
+	for rows.Next() {
+		var account string
+		var total int
+		if err := rows.Scan(&account, &total); err != nil {
+			log.Fatal(err)
+		}
+		result[account] = total
+		log.Printf("%s: %d \n", account, total)
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction")
+	}
+	return result, nil
 }
