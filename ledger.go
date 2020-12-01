@@ -14,7 +14,7 @@ import (
 type entry struct {
 	source      string
 	destination string
-	happened_at time.Time
+	happenedAt time.Time
 	amount      int
 }
 
@@ -79,7 +79,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning the sql transaction")
 		}
-		if err := insert(tx, *source, *destination, d, *amount); err != nil {
+		e := entry{
+			*source,
+			*destination,
+			d,
+			*amount,
+		}
+		if err := insert(tx, e); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
 	} else if *summaryMode && *through_date != "" {
@@ -150,22 +156,15 @@ func main() {
 }
 
 // insert a single transaction
-func insert(tx *sql.Tx, source string, destination string, happenedAt time.Time, amount int) error {
-	// tx, err := db.Begin()
-	// if err != nil {
-	// 	log.Fatalf("beginning the sql transaction")
-	// }
+func insert(tx *sql.Tx, e entry) error {
 	q :=
 		`INSERT INTO transactions
 (source, destination, happened_at, amount)
 VALUES ($1, $2, $3, $4);`
-	_, err := tx.Exec(q, source, destination, happenedAt, amount)
+	_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
 	if err != nil {
 		log.Fatalf("executing the query")
 	}
-	// if err := tx.Commit(); err != nil {
-	// 	log.Fatalf("committing the transaction: %v", err)
-	// }
 	return err
 }
 

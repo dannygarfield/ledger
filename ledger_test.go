@@ -3,10 +3,10 @@ package main
 import (
 	"database/sql"
 	"io/ioutil"
-	"testing"
-	"time"
 	"log"
 	"reflect"
+	"testing"
+	"time"
 )
 
 func TestInsertOne(t *testing.T) {
@@ -17,11 +17,13 @@ func TestInsertOne(t *testing.T) {
 		log.Fatalf("beginning the sql transaction")
 	}
 	// When
-	source := "checking"
-	destination := "credit card"
-	happenedAt := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
-	amount := 12500
-	if err := insert(tx, source, destination, happenedAt, amount); err != nil {
+	e := entry {
+		source: "checking",
+		destination: "credit card",
+		happenedAt: time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+		amount: 12500,
+	}
+	if err := insert(tx, e); err != nil {
 		t.Fatalf("inserting record: %v", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -30,14 +32,14 @@ func TestInsertOne(t *testing.T) {
 
 	// Then
 	{
-		result, err := summary(db, source, happenedAt)
+		result, err := summary(db, e.source, e.happenedAt)
 		assertNoError(t, err, "summary(source)")
-		assertEqual(t, -amount, result, "source")
+		assertEqual(t, -e.amount, result, "source")
 	}
 	{
-		result, err := summary(db, destination, happenedAt)
+		result, err := summary(db, e.destination, e.happenedAt)
 		assertNoError(t, err, "summary(destination)")
-		assertEqual(t, amount, result, "destination")
+		assertEqual(t, e.amount, result, "destination")
 	}
 }
 
@@ -50,19 +52,19 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 		{
 			source:      "checking",
 			destination: "credit card",
-			happened_at: earlyDate,
+			happenedAt: earlyDate,
 			amount:      125000,
 		},
 		{
 			source:      "checking",
 			destination: "credit card",
-			happened_at: laterDate,
+			happenedAt: laterDate,
 			amount:      2000,
 		},
 		{
 			source:      "savings",
 			destination: "checking",
-			happened_at: earlyDate,
+			happenedAt: earlyDate,
 			amount:      50000,
 		},
 	}
@@ -71,7 +73,7 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 		log.Fatalf("beginning the sql transaction")
 	}
 	for _, e := range entries {
-		err := insert(tx, e.source, e.destination, e.happened_at, e.amount)
+		err := insert(tx, e)
 		assertNoError(t, err, "inserting transaction into tx")
 	}
 	if err := tx.Commit(); err != nil {
