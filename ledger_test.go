@@ -12,17 +12,17 @@ import (
 func TestInsertOne(t *testing.T) {
 	// Given
 	db := testdb(t)
-	tx := beginTx(db, t)
+
 	// When
-	e := entry {
-		source: "checking",
+	e := entry{
+		source:      "checking",
 		destination: "credit card",
-		happenedAt: time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
-		amount: 12500,
+		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+		amount:      12500,
 	}
-	if err := insert(tx, e); err != nil {
-		t.Fatalf("inserting record: %v", err)
-	}
+	tx := beginTx(db, t)
+	err := insert(tx, e)
+	assertNoError(t, err, "inserting one entry")
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("committing the transaction: %v", err)
 	}
@@ -49,19 +49,19 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 		{
 			source:      "checking",
 			destination: "credit card",
-			happenedAt: earlyDate,
+			happenedAt:  earlyDate,
 			amount:      125000,
 		},
 		{
 			source:      "checking",
 			destination: "credit card",
-			happenedAt: laterDate,
+			happenedAt:  laterDate,
 			amount:      2000,
 		},
 		{
 			source:      "savings",
 			destination: "checking",
-			happenedAt: earlyDate,
+			happenedAt:  earlyDate,
 			amount:      50000,
 		},
 	}
@@ -85,6 +85,27 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 
 	// Then
 	assertEqual(t, want, result, "")
+}
+
+func TestInsertRepeatingEntry(t *testing.T) {
+	// Given
+	db := testdb(t)
+
+	// When
+	e := entry{
+		source:      "checking",
+		destination: "retirement",
+		amount:      5000,
+		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+	}
+	err := insertRepeating(db, e, "monthly")
+	assertNoError(t, err, "inserting repeating entry")
+
+	// Then
+	endDate := time.Date(2022, 12, 1, 0, 0, 0, 0, time.Local)
+	result, err := summary(db, e.source, endDate)
+	assertEqual(t, e.amount*24, result, "")
+
 }
 
 func testdb(t *testing.T) *sql.DB {

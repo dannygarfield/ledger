@@ -14,7 +14,7 @@ import (
 type entry struct {
 	source      string
 	destination string
-	happenedAt time.Time
+	happenedAt  time.Time
 	amount      int
 }
 
