@@ -88,7 +88,7 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	}
 
 	// Then
-	assertDeepEqual(t, want, result, "")
+	assertEqual(t, want, result, "")
 }
 
 func testdb(t *testing.T) *sql.DB {
@@ -116,13 +116,6 @@ func assertNoError(t *testing.T, err error, msg string) {
 }
 
 func assertEqual(t *testing.T, want, got interface{}, msg string) {
-	t.Helper()
-	if want != got {
-		t.Fatalf("%s: want: %v, got: %v", msg, want, got)
-	}
-}
-
-func assertDeepEqual(t *testing.T, want, got interface{}, msg string) {
 	t.Helper()
 	if b := reflect.DeepEqual(want, got); !b {
 		t.Fatalf("%s: want: %v, got: %v", msg, want, got)
