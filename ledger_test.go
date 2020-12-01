@@ -96,15 +96,23 @@ func TestInsertRepeatingEntry(t *testing.T) {
 		source:      "checking",
 		destination: "retirement",
 		amount:      5000,
-		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+		happenedAt:  time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local),
 	}
 	err := insertRepeating(db, e, "monthly")
 	assertNoError(t, err, "inserting repeating entry")
 
 	// Then
-	endDate := time.Date(2022, 12, 1, 0, 0, 0, 0, time.Local)
-	result, err := summary(db, e.source, endDate)
-	assertEqual(t, e.amount*24, result, "")
+	endDate := time.Date(2022, 12, 2, 0, 0, 0, 0, time.Local)
+	{
+		result, err := summary(db, e.source, endDate)
+		assertNoError(t, err, "")
+		assertEqual(t, -e.amount*12, result, "")
+	}
+	{
+		result, err := summary(db, e.destination, endDate)
+		assertNoError(t, err, "")
+		assertEqual(t, e.amount*12, result, "")
+	}
 
 }
 

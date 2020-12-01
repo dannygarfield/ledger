@@ -168,6 +168,7 @@ VALUES ($1, $2, $3, $4);`
 	return err
 }
 
+// get net amount of a single bucket through a given date
 func summary(db *sql.DB, bucket string, through time.Time) (int, error) {
 	tx, err := db.Begin()
 	if err != nil {
@@ -192,6 +193,7 @@ ORDER BY sum(amount) DESC;`
 	return sum, nil
 }
 
+// get net amounts of all buckets through a given date
 func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, error) {
 	tx, err := db.Begin()
 	if err != nil {
@@ -225,4 +227,40 @@ func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, err
 		log.Fatalf("committing the transaction")
 	}
 	return result, nil
+}
+
+func insertRepeating(db *sql.DB, e entry, freq string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("beginning the sql transaction")
+	}
+
+	q :=
+`INSERT INTO transactions
+(source, destination, happened_at, amount)
+VALUES ($1, $2, $3, $4);`
+
+	var freqWeek int
+	var freqMonth int
+
+	if freq == "monthly" {
+		freqMonth = 1
+		freqWeek = 0
+	} else if freq == "weekly" {
+		freqMonth = 0
+		freqWeek = 1
+	}
+	endDate := time.Now().AddDate(2, 0, 0)
+
+	for e.happenedAt.Before(endDate) {
+		if _, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount); err != nil {
+			log.Fatalf("inserting the transaction: %v", err)
+		}
+		e.happenedAt = e.happenedAt.AddDate(0, freqMonth, freqWeek)
+	}
+	// commit the transaction
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction: %v", err)
+	}
+	return err
 }
