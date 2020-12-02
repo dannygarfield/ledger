@@ -24,13 +24,13 @@ func main() {
 	// define flags for input from the command line
 	insertMode := flag.Bool("insert", false, "insert a transaction")
 	summaryMode := flag.Bool("summary", false, "get balances of all buckets")
-	through_date := flag.String("through_date", "", "date through which to summarize")
+	through := flag.String("through", "", "date through which to summarize")
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	happenedAt := flag.String("happenedAt", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
-	frequency := flag.String("frequency", "", "how often an entry repeats")
+	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
 	flag.Parse()
 
 	// open connection to the db
@@ -47,7 +47,7 @@ func main() {
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary")
 		return
-	} else if *insertMode && *frequency != "" {
+	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
 		d := parseDate(*happenedAt)
 		e := entry{
@@ -56,7 +56,7 @@ func main() {
 			happenedAt:  d,
 			amount:      *amount,
 		}
-		insertRepeating(db, e, *frequency)
+		insertRepeating(db, e, *repeat)
 	} else if *insertMode {
 		// insert a transaction to the db
 		d := parseDate(*happenedAt)
@@ -76,9 +76,9 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing the transaction")
 		}
-	} else if *summaryMode && *through_date != "" {
+	} else if *summaryMode && *through != "" {
 		// summarize all buckets through a given date
-		td := parseDate(*happenedAt)
+		td := parseDate(*through)
 		q := `SELECT account, sum(amount) FROM (
 		    SELECT amount, happened_at, destination AS account FROM transactions
 		    UNION ALL
@@ -214,15 +214,11 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 		freqDay = 7
 	}
 	endDate := time.Now().AddDate(2, 0, 0)
-	fmt.Println(endDate)
-	i := 0
 	for e.happenedAt.Before(endDate) {
-		fmt.Println("iteration:", i, "happenedAt:", e.happenedAt)
 		if _, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
 		e.happenedAt = e.happenedAt.AddDate(0, freqMonth, freqDay)
-		i += 1
 	}
 	// commit the transaction
 	if err := tx.Commit(); err != nil {
