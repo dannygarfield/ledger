@@ -30,7 +30,7 @@ func main() {
 	happenedAt := flag.String("happenedAt", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
-	repeat := flag.Bool("repeat", false, "make a transaction repeating")
+	frequency := flag.String("frequency", "", "how often an entry repeats")
 	flag.Parse()
 
 	// open connection to the db
@@ -47,8 +47,8 @@ func main() {
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary")
 		return
-	} else if *insertMode && *repeat {
-		// insert repeating 1x/month through 24 months from today
+	} else if *insertMode && *frequency != "" {
+		// insert entry that repeats through 2 years from today
 		d := parseDate(*happenedAt)
 		e := entry{
 			source:      *source,
@@ -56,7 +56,7 @@ func main() {
 			happenedAt:  d,
 			amount:      *amount,
 		}
-		insertRepeating(db, e, "monthly")
+		insertRepeating(db, e, *frequency)
 	} else if *insertMode {
 		// insert a transaction to the db
 		d := parseDate(*happenedAt)
@@ -72,6 +72,9 @@ func main() {
 		}
 		if err := insert(tx, e); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
+		}
+		if err := tx.Commit(); err != nil {
+			log.Fatalf("committing the transaction")
 		}
 	} else if *summaryMode && *through_date != "" {
 		// summarize all buckets through a given date
@@ -113,27 +116,7 @@ func main() {
 		fmt.Printf("total amount, all time, for '%v': %d\n", *bucket, sum)
 	} else if *summaryMode {
 		// output summary of all buckets through today
-		fmt.Println("Summary of all accounts, all time...")
-		q := `SELECT account, sum(amount) FROM (
-		    SELECT amount, happened_at, destination AS account FROM transactions
-		    UNION ALL
-		    SELECT -amount, happened_at, source AS account FROM transactions
-		    )
-		    WHERE date(happened_at) <= date("now")
-		    GROUP BY account
-			ORDER BY sum(amount) DESC;`
-		rows, err := db.Query(q)
-		if err != nil {
-			log.Fatalf("summarizing transactions: %v", err)
-		}
-		for rows.Next() {
-			var account string
-			var total int
-			if err := rows.Scan(&account, &total); err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("%s: %d \n", account, total)
-		}
+		summarizeAllThroughDate(db, time.Now())
 	}
 }
 
