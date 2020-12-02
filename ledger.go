@@ -27,7 +27,7 @@ func main() {
 	through_date := flag.String("through_date", "", "date through which to summarize")
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
-	happened_at := flag.String("happened_at", "", "date of transaction")
+	happenedAt := flag.String("happenedAt", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
 	repeat := flag.Bool("repeat", false, "make a transaction repeating")
@@ -49,32 +49,17 @@ func main() {
 		return
 	} else if *insertMode && *repeat {
 		// insert repeating 1x/month through 24 months from today
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning the transaction: %v", err)
+		d := parseDate(*happenedAt)
+		e := entry{
+			source:      *source,
+			destination: *destination,
+			happenedAt:  d,
+			amount:      *amount,
 		}
-		d, err := time.Parse("2006-01-02", *happened_at)
-		if err != nil {
-			log.Fatalf("parsing time: %v", err)
-		}
-		q := "INSERT INTO transactions (source, destination, happened_at, amount) VALUES ($1, $2, $3, $4);"
-		// add transaction once per month for two years
-		end_date := time.Now().AddDate(2, 0, 0)
-		for tx_date := d; tx_date.Before(end_date); tx_date = tx_date.AddDate(0, 1, 0) {
-			if _, err := tx.Exec(q, *source, *destination, tx_date, *amount); err != nil {
-				log.Fatalf("inserting the transaction: %v", err)
-			}
-		}
-		// commit the transaction
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing the transaction: %v", err)
-		}
+		insertRepeating(db, e, "monthly")
 	} else if *insertMode {
 		// insert a transaction to the db
-		d, err := time.Parse("2006-01-02", *happened_at)
-		if err != nil {
-			log.Fatalf("parsing time: %v", err)
-		}
+		d := parseDate(*happenedAt)
 		tx, err := db.Begin()
 		if err != nil {
 			log.Fatalf("beginning the sql transaction")
@@ -90,10 +75,7 @@ func main() {
 		}
 	} else if *summaryMode && *through_date != "" {
 		// summarize all buckets through a given date
-		td, err := time.Parse("2006-01-02", *through_date)
-		if err != nil {
-			log.Fatalf("parsing time: %v", err)
-		}
+		td := parseDate(*happenedAt)
 		q := `SELECT account, sum(amount) FROM (
 		    SELECT amount, happened_at, destination AS account FROM transactions
 		    UNION ALL
@@ -157,10 +139,9 @@ func main() {
 
 // insert a single transaction
 func insert(tx *sql.Tx, e entry) error {
-	q :=
-		`INSERT INTO transactions
-(source, destination, happened_at, amount)
-VALUES ($1, $2, $3, $4);`
+	q := `INSERT INTO transactions
+		(source, destination, happened_at, amount)
+		VALUES ($1, $2, $3, $4);`
 	_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
 	if err != nil {
 		log.Fatalf("executing the query")
@@ -174,14 +155,13 @@ func summary(db *sql.DB, bucket string, through time.Time) (int, error) {
 	if err != nil {
 		log.Fatalf("beginning the sql transaction")
 	}
-	q := `
-SELECT sum(amount) FROM (
-SELECT amount, happened_at FROM transactions WHERE destination = $1
-UNION ALL
-SELECT -amount, happened_at from transactions where source = $1
-)
-WHERE date(happened_at) <= date($2)
-ORDER BY sum(amount) DESC;`
+	q := `SELECT sum(amount) FROM (
+		SELECT amount, happened_at FROM transactions WHERE destination = $1
+		UNION ALL
+		SELECT -amount, happened_at from transactions where source = $1
+		)
+		WHERE date(happened_at) <= date($2)
+		ORDER BY sum(amount) DESC;`
 	row := tx.QueryRow(q, bucket, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
@@ -229,16 +209,16 @@ func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, err
 	return result, nil
 }
 
+// insert a transaction that repeats weekly or monthly
 func insertRepeating(db *sql.DB, e entry, freq string) error {
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatalf("beginning the sql transaction")
 	}
 
-	q :=
-`INSERT INTO transactions
-(source, destination, happened_at, amount)
-VALUES ($1, $2, $3, $4);`
+	q := `INSERT INTO transactions
+		(source, destination, happened_at, amount)
+		VALUES ($1, $2, $3, $4);`
 
 	var freqWeek int
 	var freqMonth int
@@ -263,4 +243,12 @@ VALUES ($1, $2, $3, $4);`
 		log.Fatalf("committing the transaction: %v", err)
 	}
 	return err
+}
+
+func parseDate(s string) time.Time {
+	d, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		log.Fatalf("parsing time: %v", err)
+	}
+	return d
 }
