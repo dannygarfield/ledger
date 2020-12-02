@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"fmt"
 	"log"
 	"time"
 
@@ -29,7 +28,6 @@ func main() {
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
 	happenedAt := flag.String("happenedAt", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
-	bucket := flag.String("bucket", "", "bucket to categorize, used with summary")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
 	flag.Parse()
 
@@ -99,21 +97,6 @@ func main() {
 			}
 			log.Printf("%s: %d \n", account, total)
 		}
-	} else if *summaryMode && *bucket != "" {
-		// summarize a single given bucket through today
-		q := `SELECT sum(amount) FROM (
-		    SELECT amount, happened_at FROM transactions WHERE destination = $1
-		    UNION ALL
-		    SELECT -amount, happened_at from transactions where source = $1
-			)
-		    WHERE date(happened_at) <= date("now")
-			ORDER BY sum(amount) DESC;`
-		row := db.QueryRow(q, bucket)
-		var sum int
-		if err := row.Scan(&sum); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("total amount, all time, for '%v': %d\n", *bucket, sum)
 	} else if *summaryMode {
 		// output summary of all buckets through today
 		summarizeAllThroughDate(db, time.Now())
