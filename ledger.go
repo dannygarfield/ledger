@@ -133,7 +133,7 @@ func insert(tx *sql.Tx, e entry) error {
 }
 
 // get net amount of a single bucket through a given date
-func summary(db *sql.DB, bucket string, through time.Time) (int, error) {
+func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) {
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatalf("beginning the sql transaction")
@@ -203,23 +203,26 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
 
-	var freqWeek int
 	var freqMonth int
+	var freqDay int
 
 	if freq == "monthly" {
 		freqMonth = 1
-		freqWeek = 0
+		freqDay = 0
 	} else if freq == "weekly" {
 		freqMonth = 0
-		freqWeek = 1
+		freqDay = 7
 	}
 	endDate := time.Now().AddDate(2, 0, 0)
-
+	fmt.Println(endDate)
+	i := 0
 	for e.happenedAt.Before(endDate) {
+		fmt.Println("iteration:", i, "happenedAt:", e.happenedAt)
 		if _, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount); err != nil {
 			log.Fatalf("inserting the transaction: %v", err)
 		}
-		e.happenedAt = e.happenedAt.AddDate(0, freqMonth, freqWeek)
+		e.happenedAt = e.happenedAt.AddDate(0, freqMonth, freqDay)
+		i += 1
 	}
 	// commit the transaction
 	if err := tx.Commit(); err != nil {

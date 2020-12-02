@@ -29,12 +29,12 @@ func TestInsertOne(t *testing.T) {
 
 	// Then
 	{
-		result, err := summary(db, e.source, e.happenedAt)
+		result, err := summarizeBucket(db, e.source, e.happenedAt)
 		assertNoError(t, err, "summary(source)")
 		assertEqual(t, -e.amount, result, "source")
 	}
 	{
-		result, err := summary(db, e.destination, e.happenedAt)
+		result, err := summarizeBucket(db, e.destination, e.happenedAt)
 		assertNoError(t, err, "summary(destination)")
 		assertEqual(t, e.amount, result, "destination")
 	}
@@ -92,26 +92,38 @@ func TestInsertRepeatingEntry(t *testing.T) {
 	db := testdb(t)
 
 	// When
-	e := entry{
+	e1 := entry{
 		source:      "checking",
-		destination: "retirement",
+		destination: "IRA",
 		amount:      5000,
-		happenedAt:  time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local),
+		happenedAt:  time.Now(), // repeating write until 2 years from now. setting happenedAt to time.Now() requires less math
 	}
-	err := insertRepeating(db, e, "monthly")
-	assertNoError(t, err, "inserting repeating entry")
+	e2 := entry{
+		source:      "checking",
+		destination: "rent",
+		amount:      5000,
+		happenedAt:  time.Now(),
+	}
+	{
+		err := insertRepeating(db, e1, "weekly")
+		assertNoError(t, err, "inserting weekly entry")
+	}
+	{
+		err := insertRepeating(db, e2, "monthly")
+		assertNoError(t, err, "inserting repeating entry")
+	}
 
 	// Then
-	endDate := time.Date(2022, 12, 2, 0, 0, 0, 0, time.Local)
+	endDate := time.Now().AddDate(2, 0, 0)
 	{
-		result, err := summary(db, e.source, endDate)
+		result, err := summarizeBucket(db, e1.source, endDate)
 		assertNoError(t, err, "")
-		assertEqual(t, -e.amount*12, result, "")
+		assertEqual(t, -e1.amount*105-e2.amount*25, result, "inserting weekly")
 	}
 	{
-		result, err := summary(db, e.destination, endDate)
+		result, err := summarizeBucket(db, e2.destination, endDate)
 		assertNoError(t, err, "")
-		assertEqual(t, e.amount*12, result, "")
+		assertEqual(t, e2.amount*25, result, "inserting monthly")
 	}
 
 }
