@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"io/ioutil"
-	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -14,29 +13,27 @@ func TestInsertOne(t *testing.T) {
 	db := testdb(t)
 
 	// When
-	e := entry{
-		source:      "checking",
-		destination: "credit card",
-		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
-		amount:      12500,
+	e := []entry{
+		{
+			source:      "checking",
+			destination: "credit card",
+			happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+			amount:      12500,
+		},
 	}
-	tx := beginTx(db, t)
-	err := insert(tx, e)
+	err := insert(db, e)
 	assertNoError(t, err, "inserting one entry")
-	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction: %v", err)
-	}
 
 	// Then
 	{
-		result, err := summarizeBucket(db, e.source, e.happenedAt)
+		result, err := summarizeBucket(db, e[0].source, e[0].happenedAt)
 		assertNoError(t, err, "summary(source)")
-		assertEqual(t, -e.amount, result, "source")
+		assertEqual(t, -e[0].amount, result, "source")
 	}
 	{
-		result, err := summarizeBucket(db, e.destination, e.happenedAt)
+		result, err := summarizeBucket(db, e[0].destination, e[0].happenedAt)
 		assertNoError(t, err, "summary(destination)")
-		assertEqual(t, e.amount, result, "destination")
+		assertEqual(t, e[0].amount, result, "destination")
 	}
 }
 
@@ -88,6 +85,12 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	laterDate := time.Date(2021, 4, 1, 0, 0, 0, 0, time.Local)
 	entries := []entry{
 		{
+			source:      "savings",
+			destination: "checking",
+			happenedAt:  earlyDate,
+			amount:      50000,
+		},
+		{
 			source:      "checking",
 			destination: "credit card",
 			happenedAt:  earlyDate,
@@ -99,21 +102,9 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 			happenedAt:  laterDate,
 			amount:      2000,
 		},
-		{
-			source:      "savings",
-			destination: "checking",
-			happenedAt:  earlyDate,
-			amount:      50000,
-		},
 	}
-	tx := beginTx(db, t)
-	for _, e := range entries {
-		err := insert(tx, e)
-		assertNoError(t, err, "inserting transaction into tx")
-	}
-	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction: %v", err)
-	}
+	err := insert(db, entries)
+	assertNoError(t, err, "inserting transaction")
 
 	// When
 	result, err := summarizeAllThroughDate(db, earlyDate)
@@ -128,6 +119,41 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	assertEqual(t, want, result, "")
 }
 
+// func TestGetAssets(t *testing.T) {
+// 	// Given
+// 	db := testdb(t)
+// 	entryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
+// 	entries := []entry{
+// 		{
+// 			source:      "savings",
+// 			destination: "checking",
+// 			happenedAt:  earlyDate,
+// 			amount:      50000,
+// 		},
+// 		{
+// 			source:      "checking",
+// 			destination: "credit card",
+// 			happenedAt:  earlyDate,
+// 			amount:      125000,
+// 		},
+// 		{
+// 			source:      "checking",
+// 			destination: "credit card",
+// 			happenedAt:  laterDate,
+// 			amount:      2000,
+// 		},
+// 	}
+// 	tx := beginTx(db, t)
+// 	for _, e := range entries {
+// 		err := insert(tx, e)
+// 		assertNoError(t, err, "inserting transaction into tx")
+// 	}
+// 	if err := tx.Commit(); err != nil {
+// 		log.Fatalf("committing the transaction: %v", err)
+// 	}
+// }
+
+// helper functions
 func testdb(t *testing.T) *sql.DB {
 	t.Helper()
 

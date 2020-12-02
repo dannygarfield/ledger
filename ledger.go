@@ -58,21 +58,16 @@ func main() {
 	} else if *insertMode {
 		// insert a transaction to the db
 		d := parseDate(*happenedAt)
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning the sql transaction")
+		es := []entry{
+			{
+				source:      *source,
+				destination: *destination,
+				happenedAt:  d,
+				amount:      *amount,
+			},
 		}
-		e := entry{
-			*source,
-			*destination,
-			d,
-			*amount,
-		}
-		if err := insert(tx, e); err != nil {
-			log.Fatalf("inserting the transaction: %v", err)
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing the transaction")
+		if err := insert(db, es); err != nil {
+			log.Fatalf("inserting single entry")
 		}
 	} else if *summaryMode && *through != "" {
 		// summarize all buckets through a given date
@@ -104,14 +99,25 @@ func main() {
 }
 
 // insert a single transaction
-func insert(tx *sql.Tx, e entry) error {
+func insert(db *sql.DB, entries []entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
-	_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
+	tx, err := db.Begin()
 	if err != nil {
-		log.Fatalf("executing the query")
+		log.Fatalf("beginning the sql transaction")
 	}
+	for _, e := range entries {
+		log.Print("entry:", e)
+		_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
+		if err != nil {
+			log.Fatalf("executing the insert")
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction")
+	}
+
 	return err
 }
 
