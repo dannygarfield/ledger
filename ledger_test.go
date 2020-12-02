@@ -40,6 +40,47 @@ func TestInsertOne(t *testing.T) {
 	}
 }
 
+func TestInsertRepeatingEntry(t *testing.T) {
+	// Given
+	db := testdb(t)
+
+	// When
+	e1 := entry{
+		source:      "checking",
+		destination: "IRA",
+		amount:      5000,
+		happenedAt:  time.Now(), // repeating write until 2 years from now. setting happenedAt to time.Now() requires less math
+	}
+	e2 := entry{
+		source:      "checking",
+		destination: "rent",
+		amount:      5000,
+		happenedAt:  time.Now(),
+	}
+	{
+		err := insertRepeating(db, e1, "weekly")
+		assertNoError(t, err, "inserting weekly entry")
+	}
+	{
+		err := insertRepeating(db, e2, "monthly")
+		assertNoError(t, err, "inserting repeating entry")
+	}
+
+	// Then
+	endDate := time.Now().AddDate(2, 0, 0)
+	{
+		result, err := summarizeBucket(db, e1.source, endDate)
+		assertNoError(t, err, "")
+		assertEqual(t, -e1.amount*105-e2.amount*25, result, "inserting weekly")
+	}
+	{
+		result, err := summarizeBucket(db, e2.destination, endDate)
+		assertNoError(t, err, "")
+		assertEqual(t, e2.amount*25, result, "inserting monthly")
+	}
+
+}
+
 func TestSummarizeAllThroughDate(t *testing.T) {
 	// Given
 	db := testdb(t)
@@ -85,47 +126,6 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 
 	// Then
 	assertEqual(t, want, result, "")
-}
-
-func TestInsertRepeatingEntry(t *testing.T) {
-	// Given
-	db := testdb(t)
-
-	// When
-	e1 := entry{
-		source:      "checking",
-		destination: "IRA",
-		amount:      5000,
-		happenedAt:  time.Now(), // repeating write until 2 years from now. setting happenedAt to time.Now() requires less math
-	}
-	e2 := entry{
-		source:      "checking",
-		destination: "rent",
-		amount:      5000,
-		happenedAt:  time.Now(),
-	}
-	{
-		err := insertRepeating(db, e1, "weekly")
-		assertNoError(t, err, "inserting weekly entry")
-	}
-	{
-		err := insertRepeating(db, e2, "monthly")
-		assertNoError(t, err, "inserting repeating entry")
-	}
-
-	// Then
-	endDate := time.Now().AddDate(2, 0, 0)
-	{
-		result, err := summarizeBucket(db, e1.source, endDate)
-		assertNoError(t, err, "")
-		assertEqual(t, -e1.amount*105-e2.amount*25, result, "inserting weekly")
-	}
-	{
-		result, err := summarizeBucket(db, e2.destination, endDate)
-		assertNoError(t, err, "")
-		assertEqual(t, e2.amount*25, result, "inserting monthly")
-	}
-
 }
 
 func testdb(t *testing.T) *sql.DB {
