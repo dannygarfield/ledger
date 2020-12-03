@@ -119,39 +119,66 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	assertEqual(t, want, result, "")
 }
 
-// func TestGetAssets(t *testing.T) {
-// 	// Given
-// 	db := testdb(t)
-// 	entryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
-// 	entries := []entry{
-// 		{
-// 			source:      "savings",
-// 			destination: "checking",
-// 			happenedAt:  earlyDate,
-// 			amount:      50000,
-// 		},
-// 		{
-// 			source:      "checking",
-// 			destination: "credit card",
-// 			happenedAt:  earlyDate,
-// 			amount:      125000,
-// 		},
-// 		{
-// 			source:      "checking",
-// 			destination: "credit card",
-// 			happenedAt:  laterDate,
-// 			amount:      2000,
-// 		},
-// 	}
-// 	tx := beginTx(db, t)
-// 	for _, e := range entries {
-// 		err := insert(tx, e)
-// 		assertNoError(t, err, "inserting transaction into tx")
-// 	}
-// 	if err := tx.Commit(); err != nil {
-// 		log.Fatalf("committing the transaction: %v", err)
-// 	}
-// }
+func TestGetAssets(t *testing.T) {
+	// Given
+	db := testdb(t)
+	entryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
+	entries := []entry{
+		{
+			source:      "savings",
+			destination: "checking",
+			happenedAt:  entryDate,
+			amount:      50000,
+		},
+		{
+			source:      "checking",
+			destination: "credit card",
+			happenedAt:  entryDate,
+			amount:      125000,
+		},
+		{
+			source:      "paycheck",
+			destination: "checking",
+			happenedAt:  entryDate,
+			amount:      20000,
+		},
+	}
+	bucket := []bucket{
+		{
+			name:      "savings",
+			asset:     true,
+			liquidity: "full",
+		},
+		{
+			name:      "checking",
+			asset:     true,
+			liquidity: "full",
+		},
+		{
+			name:      "credit card",
+			asset:     false,
+			liquidity: "",
+		},
+		{
+			name:      "paycheck",
+			asset:     false,
+			liquidity: "",
+		},
+	}
+	err := insert(db, entries)
+	assertNoError(t, err, "inserting entries")
+	err = classifyBuckets(db, buckets)
+	assertNoError(t, err, "classifying buckets")
+
+	// When
+	result, err := sumAssets(db, entryDate)
+	assertNoError(t, err, "summing assets")
+	want := -entries[1].amount + entries[2].amount
+
+	// Then
+	assertEqual(t, want, result, "checking equality of sumAssets")
+
+}
 
 // helper functions
 func testdb(t *testing.T) *sql.DB {
