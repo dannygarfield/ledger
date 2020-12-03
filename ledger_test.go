@@ -171,7 +171,7 @@ func TestGetAssets(t *testing.T) {
 	assertNoError(t, err, "classifying buckets")
 
 	// When
-	result, err := sumAssets(db, entryDate)
+	result, err := sumAssets(db, entryDate.AddDate(0,0,1))
 	assertNoError(t, err, "summing assets")
 	want := -entries[1].amount + entries[2].amount
 

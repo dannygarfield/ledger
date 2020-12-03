@@ -112,7 +112,6 @@ func insert(db *sql.DB, entries []entry) error {
 		VALUES ($1, $2, $3, $4);`
 	tx := beginTx(db)
 	for _, e := range entries {
-		log.Print("entry:", e)
 		_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
 		if err != nil {
 			log.Fatalf("executing the insert")
@@ -244,4 +243,28 @@ func classifyBuckets(db *sql.DB, buckets []bucket) error {
 		log.Fatalf("committing the transaction")
 	}
 	return nil
+}
+
+func sumAssets(db *sql.DB, through time.Time) (int, error) {
+	q := `SELECT sum(amount) FROM (
+    	SELECT destination AS account, amount, happened_at
+		FROM transactions
+        UNION ALL
+        SELECT source AS account, -amount, happened_at
+		FROM transactions
+        ) t
+        LEFT JOIN buckets b
+        ON t.account = b.name
+        WHERE date(t.happened_at) < date($1) AND b.asset = 1;`
+	tx := beginTx(db)
+	row := tx.QueryRow(q, through)
+	var sum int
+	if err := row.Scan(&sum); err != nil {
+		return -1, err
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction")
+	}
+	return sum, nil
+
 }
