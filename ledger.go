@@ -105,7 +105,7 @@ func main() {
 	}
 }
 
-// insert a single transaction
+// insert a slice of entries
 func insert(db *sql.DB, entries []entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
@@ -121,6 +121,18 @@ func insert(db *sql.DB, entries []entry) error {
 		log.Fatalf("committing the transaction")
 	}
 	return nil
+}
+
+// insert a single entry
+func insertOne(db *sql.DB, e entry) error {
+	entries := []entry{
+		e,
+	}
+	if err := insert(db, entries); err != nil {
+		log.Fatalf("inserting one entry")
+	}
+	return nil
+
 }
 
 // get net amount of a single bucket through a given date

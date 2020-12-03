@@ -13,27 +13,25 @@ func TestInsertOne(t *testing.T) {
 	db := testdb(t)
 
 	// When
-	e := []entry{
-		{
+	e := entry{
 			source:      "checking",
 			destination: "credit card",
 			happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
 			amount:      12500,
-		},
-	}
-	err := insert(db, e)
+		}
+	err := insertOne(db, e)
 	assertNoError(t, err, "inserting one entry")
 
 	// Then
 	{
-		result, err := summarizeBucket(db, e[0].source, e[0].happenedAt)
+		result, err := summarizeBucket(db, e.source, e.happenedAt)
 		assertNoError(t, err, "summary(source)")
-		assertEqual(t, -e[0].amount, result, "source")
+		assertEqual(t, -e.amount, result, "source")
 	}
 	{
-		result, err := summarizeBucket(db, e[0].destination, e[0].happenedAt)
+		result, err := summarizeBucket(db, e.destination, e.happenedAt)
 		assertNoError(t, err, "summary(destination)")
-		assertEqual(t, e[0].amount, result, "destination")
+		assertEqual(t, e.amount, result, "destination")
 	}
 }
 
