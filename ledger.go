@@ -218,6 +218,7 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 	return nil
 }
 
+// parse a date
 func parseDate(s string) time.Time {
 	d, err := time.Parse("2006-01-02", s)
 	if err != nil {
@@ -226,6 +227,7 @@ func parseDate(s string) time.Time {
 	return d
 }
 
+// begin a sql transaction
 func beginTx(db *sql.DB) *sql.Tx {
 	tx, err := db.Begin()
 	if err != nil {
@@ -234,7 +236,8 @@ func beginTx(db *sql.DB) *sql.Tx {
 	return tx
 }
 
-func classifyBuckets(db *sql.DB, buckets []bucket) error {
+// add buckets to the db
+func addBuckets(db *sql.DB, buckets []bucket) error {
 	tx := beginTx(db)
 	q := `INSERT INTO buckets
 		(name, asset, liquidity)
@@ -257,6 +260,7 @@ func classifyBuckets(db *sql.DB, buckets []bucket) error {
 	return nil
 }
 
+// get total assets owned on a given date
 func sumAssets(db *sql.DB, through time.Time) (int, error) {
 	q := `SELECT sum(amount) FROM (
     	SELECT destination AS account, amount, happened_at
@@ -278,5 +282,33 @@ func sumAssets(db *sql.DB, through time.Time) (int, error) {
 		log.Fatalf("committing the transaction")
 	}
 	return sum, nil
+}
 
+// find the first date after today that a bucket becomes <= 0
+func findWhenZero(db *sql.DB, bucket string) (time.Time, error) {
+	todayBalance, err := summarizeBucket(db, bucket, time.Now())
+	if err != nil {
+		log.Fatalf("summarizing balance today of bucket")
+	}
+	if todayBalance <= 0 {
+		log.Fatalf("bucket is already below zero")
+	}
+
+	// h, _ := time.ParseDuration("1h00m")
+	today := convertToDate(time.Now())
+
+	for current := today; current.Before(today.AddDate(2, 0, 0)); current = current.AddDate(0, 0, 1) {
+		if balance, _ := summarizeBucket(db, bucket, current); balance <= 0 {
+			return current, nil
+		}
+	}
+	return time.Now(), nil
+}
+
+// return a time with year, month, and day values; all other values equal 0
+func convertToDate(t time.Time) time.Time {
+	year := t.Year()
+	month := t.Month()
+	day := t.Day()
+	return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
 }
