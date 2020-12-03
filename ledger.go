@@ -17,6 +17,13 @@ type entry struct {
 	amount      int
 }
 
+// a bucket describes ownership and accessibility of money
+type bucket struct {
+	name      string
+	asset     bool
+	liquidity string
+}
+
 func main() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 
@@ -103,10 +110,7 @@ func insert(db *sql.DB, entries []entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
+	tx := beginTx(db)
 	for _, e := range entries {
 		log.Print("entry:", e)
 		_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
@@ -118,15 +122,12 @@ func insert(db *sql.DB, entries []entry) error {
 		log.Fatalf("committing the transaction")
 	}
 
-	return err
+	return nil
 }
 
 // get net amount of a single bucket through a given date
 func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
+	tx := beginTx(db)
 	q := `SELECT sum(amount) FROM (
 		SELECT amount, happened_at FROM transactions WHERE destination = $1
 		UNION ALL
@@ -147,10 +148,7 @@ func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) 
 
 // get net amounts of all buckets through a given date
 func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, error) {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
+	tx := beginTx(db)
 	q := `SELECT account, sum(amount) FROM (
 		SELECT amount, happened_at, destination AS account FROM transactions
 		UNION ALL
@@ -183,11 +181,7 @@ func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, err
 
 // insert a transaction that repeats weekly or monthly
 func insertRepeating(db *sql.DB, e entry, freq string) error {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
-
+	tx := beginTx(db)
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
@@ -213,7 +207,7 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("committing the transaction: %v", err)
 	}
-	return err
+	return nil
 }
 
 func parseDate(s string) time.Time {
@@ -223,3 +217,15 @@ func parseDate(s string) time.Time {
 	}
 	return d
 }
+
+func beginTx(db *sql.DB) *sql.Tx {
+	tx, err := db.Begin()
+	if err != nil {
+		log.Fatalf("beginning the sql transaction")
+	}
+	return tx
+}
+
+// func classifyBuckets(db *sql.DB, buckets []bucket) error {
+//
+// }

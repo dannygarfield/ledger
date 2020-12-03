@@ -143,7 +143,7 @@ func TestGetAssets(t *testing.T) {
 			amount:      20000,
 		},
 	}
-	bucket := []bucket{
+	buckets := []bucket{
 		{
 			name:      "savings",
 			asset:     true,
@@ -196,16 +196,6 @@ func testdb(t *testing.T) *sql.DB {
 		t.Fatalf("loading schema: %v", err)
 	}
 	return db
-}
-
-func beginTx(db *sql.DB, t *testing.T) *sql.Tx {
-	t.Helper()
-
-	tx, err := db.Begin()
-	if err != nil {
-		t.Fatalf("beginning the sql transaction")
-	}
-	return tx
 }
 
 func assertNoError(t *testing.T, err error, msg string) {
