@@ -121,7 +121,6 @@ func insert(db *sql.DB, entries []entry) error {
 	if err := tx.Commit(); err != nil {
 		log.Fatalf("committing the transaction")
 	}
-
 	return nil
 }
 
@@ -185,10 +184,8 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
-
 	var freqMonth int
 	var freqDay int
-
 	if freq == "monthly" {
 		freqMonth = 1
 		freqDay = 0
@@ -226,6 +223,25 @@ func beginTx(db *sql.DB) *sql.Tx {
 	return tx
 }
 
-// func classifyBuckets(db *sql.DB, buckets []bucket) error {
-//
-// }
+func classifyBuckets(db *sql.DB, buckets []bucket) error {
+	tx := beginTx(db)
+	q := `INSERT INTO buckets
+		(name, asset, liquidity)
+		VALUES ($1, $2, $3)`
+	var x int
+	for _, b := range buckets {
+		if b.asset == true {
+			x = 1
+		} else {
+			x = 0
+		}
+		_, err := tx.Exec(q, b.name, x, b.liquidity)
+		if err != nil {
+			log.Fatalf("inserting buckets")
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("committing the transaction")
+	}
+	return nil
+}
