@@ -3,33 +3,40 @@ package main
 import (
 	"database/sql"
 	"io/ioutil"
+	"ledger/sqlstatements"
 	"reflect"
 	"testing"
 	"time"
 )
 
-func TestInsertOne(t *testing.T) {
+func TestInsert(t *testing.T) {
 	// Given
 	db := testdb(t)
 
 	// When
+	tx, err := sqlstatements.BeginTx(db)
+	assertNoError(t, err, "TestInsert(): beginning sql transaction")
 	e := entry{
 		source:      "checking",
 		destination: "credit card",
 		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
 		amount:      120,
 	}
-	err := insertOne(db, e)
+	err = insert(tx, e)
+	assertNoError(t, err, "")
+	err = tx.Commit()
 	assertNoError(t, err, "")
 
 	// Then
+	err = tx.Commit()
+	assertNoError(t, err, "")
 	{
-		result, err := summarizeBucket(db, e.source, e.happenedAt)
+		result, err := summarizeBucket(tx, e.source, e.happenedAt)
 		assertNoError(t, err, "summary(source)")
 		assertEqual(t, -e.amount, result, "source")
 	}
 	{
-		result, err := summarizeBucket(db, e.destination, e.happenedAt)
+		result, err := summarizeBucket(tx, e.destination, e.happenedAt)
 		assertNoError(t, err, "summary(destination)")
 		assertEqual(t, e.amount, result, "destination")
 	}

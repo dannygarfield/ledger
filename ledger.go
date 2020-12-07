@@ -120,8 +120,11 @@ func main() {
 	}
 }
 
+// END MAIN
+
+// BEGIN FUNCTIONS
 // insert a slice of entries
-func insert(db *sql.DB, entries []entry) error {
+func insert(tx *sql.Tx, e entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
@@ -129,35 +132,15 @@ func insert(db *sql.DB, entries []entry) error {
 	if err != nil {
 		return fmt.Errorf("insert() - beginning the sql tx: %w", err)
 	}
-	for _, e := range entries {
-		_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
-		if err != nil {
-			return fmt.Errorf("insert() - executing the insert: %w", err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("insert() - committing the transaction: %w", err)
-	}
-	return nil
-}
-
-// insert a single entry
-func insertOne(db *sql.DB, e entry) error {
-	entries := []entry{
-		e,
-	}
-	if err := insert(db, entries); err != nil {
-		return fmt.Errorf("insertOne - inserting entry: %w", err)
+	_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
+	if err != nil {
+		return fmt.Errorf("insert() - executing the insert: %w", err)
 	}
 	return nil
 }
 
 // get net amount of a single bucket through a given date
-func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) {
-	tx, err := sqlstatements.BeginTx(db)
-	if err != nil {
-		return -1, fmt.Errorf("summarizeBucket() - beginning the sql tx: %w", err)
-	}
+func summarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
 	q := `SELECT sum(amount) FROM (
 		SELECT amount, happened_at FROM transactions WHERE destination = $1
 		UNION ALL
@@ -169,9 +152,6 @@ func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) 
 	var sum int
 	if err := row.Scan(&sum); err != nil {
 		return -1, fmt.Errorf("summarizeBucket - querying rows: %w", err)
-	}
-	if err := tx.Commit(); err != nil {
-		return -1, fmt.Errorf("summarizeBucket() - committing the transaction: %w", err)
 	}
 	return sum, nil
 }
