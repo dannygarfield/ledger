@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
+	"ledger/sqlstatements"
 	"log"
 	"time"
 
@@ -43,6 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("opening database: %v", err)
 	}
+	defer db.Close()
 
 	if *insertMode && *summaryMode {
 		// instruct user to pick only one mode
@@ -54,7 +57,11 @@ func main() {
 		return
 	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
-		d := parseDate(*happenedAt)
+		d, err := parseDate(*happenedAt)
+		if err != nil {
+			log.Print(err)
+			return
+		}
 		e := entry{
 			source:      *source,
 			destination: *destination,
@@ -64,7 +71,11 @@ func main() {
 		insertRepeating(db, e, *repeat)
 	} else if *insertMode {
 		// insert a transaction to the db
-		d := parseDate(*happenedAt)
+		d, err := parseDate(*happenedAt)
+		if err != nil {
+			log.Print(err)
+			return
+		}
 		es := []entry{
 			{
 				source:      *source,
@@ -78,7 +89,11 @@ func main() {
 		}
 	} else if *summaryMode && *through != "" {
 		// summarize all buckets through a given date
-		td := parseDate(*through)
+		td, err := parseDate(*through)
+		if err != nil {
+			log.Print(err)
+			return
+		}
 		q := `SELECT account, sum(amount) FROM (
 		    SELECT amount, happened_at, destination AS account FROM transactions
 		    UNION ALL
@@ -110,15 +125,18 @@ func insert(db *sql.DB, entries []entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return fmt.Errorf("insert() - beginning the sql tx: %w", err)
+	}
 	for _, e := range entries {
 		_, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount)
 		if err != nil {
-			log.Fatalf("executing the insert")
+			return fmt.Errorf("insert() - executing the insert: %w", err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction")
+		return fmt.Errorf("insert() - committing the transaction: %w", err)
 	}
 	return nil
 }
@@ -129,15 +147,17 @@ func insertOne(db *sql.DB, e entry) error {
 		e,
 	}
 	if err := insert(db, entries); err != nil {
-		log.Fatalf("inserting one entry")
+		return fmt.Errorf("insertOne - inserting entry: %w", err)
 	}
 	return nil
-
 }
 
 // get net amount of a single bucket through a given date
 func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) {
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return -1, fmt.Errorf("summarizeBucket() - beginning the sql tx: %w", err)
+	}
 	q := `SELECT sum(amount) FROM (
 		SELECT amount, happened_at FROM transactions WHERE destination = $1
 		UNION ALL
@@ -148,17 +168,20 @@ func summarizeBucket(db *sql.DB, bucket string, through time.Time) (int, error) 
 	row := tx.QueryRow(q, bucket, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
-		return -1, err
+		return -1, fmt.Errorf("summarizeBucket - querying rows: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction")
+		return -1, fmt.Errorf("summarizeBucket() - committing the transaction: %w", err)
 	}
 	return sum, nil
 }
 
 // get net amounts of all buckets through a given date
 func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, error) {
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return nil, fmt.Errorf("summarizeAllThroughDate() - beginning the sql tx: %w", err)
+	}
 	q := `SELECT account, sum(amount) FROM (
 		SELECT amount, happened_at, destination AS account FROM transactions
 		UNION ALL
@@ -169,7 +192,7 @@ func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, err
 		ORDER BY sum(amount) DESC;`
 	rows, err := tx.Query(q, through)
 	if err != nil {
-		log.Fatalf("summarizing transactions: %v", err)
+		return nil, fmt.Errorf("summarizeAllThroughDate() - querying rows: %w", err)
 	}
 
 	result := make(map[string]int)
@@ -178,20 +201,23 @@ func summarizeAllThroughDate(db *sql.DB, through time.Time) (map[string]int, err
 		var account string
 		var total int
 		if err := rows.Scan(&account, &total); err != nil {
-			log.Fatal(err)
+			return nil, fmt.Errorf("summarizeAllThroughDate() - iterating through rows: %w", err)
 		}
 		result[account] = total
 		log.Printf("%s: %d \n", account, total)
 	}
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction")
+		return nil, fmt.Errorf("summarizeAllThroughDate() - committing sql tx: %w", err)
 	}
 	return result, nil
 }
 
 // insert a transaction that repeats weekly or monthly
 func insertRepeating(db *sql.DB, e entry, freq string) error {
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return fmt.Errorf("insertRepeating - beginning the sql tx: %w", err)
+	}
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
@@ -207,38 +233,32 @@ func insertRepeating(db *sql.DB, e entry, freq string) error {
 	endDate := time.Now().AddDate(2, 0, 0)
 	for e.happenedAt.Before(endDate) {
 		if _, err := tx.Exec(q, e.source, e.destination, e.happenedAt, e.amount); err != nil {
-			log.Fatalf("inserting the transaction: %v", err)
+			return fmt.Errorf("insertRepeating() - inserting transactions: %w", err)
 		}
 		e.happenedAt = e.happenedAt.AddDate(0, freqMonth, freqDay)
 	}
 	// commit the transaction
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction: %v", err)
+		return fmt.Errorf("insertRepeating() - committing sql tx: %w", err)
 	}
 	return nil
 }
 
 // parse a date
-func parseDate(s string) time.Time {
+func parseDate(s string) (time.Time, error) {
 	d, err := time.Parse("2006-01-02", s)
 	if err != nil {
-		log.Fatalf("parsing time: %v", err)
+		return time.Time{}, fmt.Errorf("parseDate() - parsing time: %w", err)
 	}
-	return d
-}
-
-// begin a sql transaction
-func beginTx(db *sql.DB) *sql.Tx {
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning the sql transaction")
-	}
-	return tx
+	return d, nil
 }
 
 // add buckets to the db
 func addBuckets(db *sql.DB, buckets []bucket) error {
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return fmt.Errorf("addBuckets() - beginning the sql tx: %w", err)
+	}
 	q := `INSERT INTO buckets
 		(name, asset, liquidity)
 		VALUES ($1, $2, $3)`
@@ -251,11 +271,11 @@ func addBuckets(db *sql.DB, buckets []bucket) error {
 		}
 		_, err := tx.Exec(q, b.name, x, b.liquidity)
 		if err != nil {
-			log.Fatalf("inserting buckets")
+			return fmt.Errorf("addBuckets() - executing query: %w", err)
 		}
 	}
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction")
+		return fmt.Errorf("addBuckets() - committing the transaction: %w", err)
 	}
 	return nil
 }
@@ -272,14 +292,17 @@ func sumAssets(db *sql.DB, through time.Time) (int, error) {
         LEFT JOIN buckets b
         ON t.account = b.name
         WHERE date(t.happened_at) < date($1) AND b.asset = 1;`
-	tx := beginTx(db)
+	tx, err := sqlstatements.BeginTx(db)
+	if err != nil {
+		return -1, fmt.Errorf("sumAssets() - beginning sql tx: %w", err)
+	}
 	row := tx.QueryRow(q, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
-		return -1, err
+		return -1, fmt.Errorf("sumAssets() - scanning rows: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing the transaction")
+		return -1, fmt.Errorf("sumAssets() - committing the transaction: %w", err)
 	}
 	return sum, nil
 }
@@ -288,18 +311,17 @@ func sumAssets(db *sql.DB, through time.Time) (int, error) {
 func findWhenZero(db *sql.DB, bucket string) (time.Time, error) {
 	todayBalance, err := summarizeBucket(db, bucket, time.Now())
 	if err != nil {
-		log.Fatalf("summarizing balance today of bucket")
+		return time.Now(), fmt.Errorf("findWhenZero() - summarizing balance today of bucket: %w", err)
 	}
 	if todayBalance <= 0 {
-		log.Fatalf("bucket is already below zero")
+		fmt.Println("bucket is already below zero")
+		return time.Now(), nil
 	}
 
-	// h, _ := time.ParseDuration("1h00m")
 	today := convertToDate(time.Now())
-
-	for current := today; current.Before(today.AddDate(2, 0, 0)); current = current.AddDate(0, 0, 1) {
-		if balance, _ := summarizeBucket(db, bucket, current); balance <= 0 {
-			return current, nil
+	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
+		if balance, _ := summarizeBucket(db, bucket, t); balance <= 0 {
+			return t, nil
 		}
 	}
 	return time.Now(), nil

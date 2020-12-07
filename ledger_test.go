@@ -20,7 +20,7 @@ func TestInsertOne(t *testing.T) {
 		amount:      120,
 	}
 	err := insertOne(db, e)
-	assertNoError(t, err, "inserting one entry")
+	assertNoError(t, err, "")
 
 	// Then
 	{
