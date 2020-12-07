@@ -187,14 +187,16 @@ func TestGetAssets(t *testing.T) {
 		assertNoError(t, err, "inserting entries")
 	}
 	for _, b := range buckets {
-		err := addBucket(tx, buckets)
+		err := addBucket(tx, b)
 		assertNoError(t, err, "classifying buckets")
 	}
 	testcommit(t, tx)
 
 	// When
+	tx = testtx(t, db)
 	result, err := sumAssets(tx, entryDate.AddDate(0, 0, 1))
 	assertNoError(t, err, "summing assets")
+	testcommit(t, tx)
 	want := -entries[1].amount + entries[2].amount
 
 	// Then
