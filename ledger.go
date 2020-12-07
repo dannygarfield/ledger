@@ -37,6 +37,8 @@ func main() {
 	happenedAt := flag.String("happenedAt", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
+	assets := flag.Bool("assets", false, "include only money in your posession")
+	zeroMode := flag.Bool("zero", false, "find when a bucket zeroes out")
 	flag.Parse()
 
 	// open connection to the db
@@ -50,9 +52,9 @@ func main() {
 		// instruct user to pick only one mode
 		log.Printf("only use one of -insert or -summary")
 		return
-	} else if !*insertMode && !*summaryMode {
+	} else if !*insertMode && !*summaryMode && !*zeroMode {
 		// instruct user to pick a mode
-		log.Printf("specify one of -insert or -summary")
+		log.Printf("specify one of -insert or -summary or --zero")
 		return
 	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
@@ -100,6 +102,25 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
+	} else if *summaryMode && *through != "" && *assets {
+		// summarize all assets through a given date
+		td, err := parseDate(*through)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatalf("beginning sql transaction: %v", err)
+		}
+		sum, err := sumAssets(tx, td)
+		if err != nil {
+			log.Fatalf("summing assets: %v", err)
+		}
+		if err := tx.Commit(); err != nil {
+			log.Fatalf("committing sql transaction: %v", err)
+		}
+		log.Printf("All assets as of %v: %d", *through, sum)
 	} else if *summaryMode && *through != "" {
 		// summarize all buckets through a given date
 		td, err := parseDate(*through)
@@ -137,6 +158,17 @@ func main() {
 		for b, v := range result {
 			log.Printf("%s: %d", b, v)
 		}
+	} else if *zeroMode && *source != "" {
+		// find when a bucket next has a zero balance
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatalf("beginning sql transaction: %v", err)
+		}
+		d, err := findWhenZero(tx, *source)
+		if err != nil {
+			log.Fatalf("finding when a bucket becomes zero: %v", err)
+		}
+		log.Printf("Bucket %s next becomes zero on %v", *source, d)
 	}
 }
 
@@ -186,9 +218,7 @@ func summarizeAllThroughDate(tx *sql.Tx, through time.Time) (map[string]int, err
 	if err != nil {
 		return nil, fmt.Errorf("summarizeAllThroughDate() - querying rows: %w", err)
 	}
-
 	result := make(map[string]int)
-
 	for rows.Next() {
 		var account string
 		var total int
