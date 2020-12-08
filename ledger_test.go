@@ -204,43 +204,38 @@ func TestGetAssets(t *testing.T) {
 
 }
 
-// func TestWhenZero(t *testing.T) {
-// 	// Given
-// 	db := testdb(t)
-// 	e1 := entry{
-// 		source:      "savings",
-// 		destination: "checking",
-// 		happenedAt:  time.Now(),
-// 		amount:      500,
-// 	}
-// 	e2 := entry{
-// 		source:      "checking",
-// 		destination: "rent",
-// 		happenedAt:  time.Now(),
-// 		amount:      150,
-// 	}
-// 	tx := testtx(t, db)
-// 	err := insert(tx, e1)
-// 	assertNoError(t, err, "inserting one entry")
-// 	err = insertRepeating(tx, e2, "monthly")
-// 	assertNoError(t, err, "inserting repeating entry")
-// 	testcommit(t, tx)
-//
-// 	tx = testtx(t, db)
-// 	sum, err := summarizeBucket(tx, e2.source, time.Now())
-// 	testcommit(t, tx)
-// 	fmt.Println(sum)
-//
-// 	// When
-// 	tx = testtx(t, db)
-// 	result, err := findWhenZero(tx, e2.source)
-// 	assertNoError(t, err, "finding when bucket hits zero")
-// 	testcommit(t, tx)
-// 	want := convertToDate(time.Now()).AddDate(0, 3, 0)
-//
-// 	// Then
-// 	assertEqual(t, want, result, "")
-// }
+func TestWhenZero(t *testing.T) {
+	// Given
+	db := testdb(t)
+	e1 := entry{
+		source:      "savings",
+		destination: "checking",
+		happenedAt:  time.Now(),
+		amount:      500,
+	}
+	e2 := entry{
+		source:      "checking",
+		destination: "rent",
+		happenedAt:  time.Now(),
+		amount:      150,
+	}
+	tx := testtx(t, db)
+	err := insert(tx, e1)
+	assertNoError(t, err, "inserting one entry")
+	err = insertRepeating(tx, e2, "monthly")
+	assertNoError(t, err, "inserting repeating entry")
+	testcommit(t, tx)
+
+	// When
+	tx = testtx(t, db)
+	result, err := findWhenZero(tx, e2.source)
+	assertNoError(t, err, "finding when bucket hits zero")
+	testcommit(t, tx)
+	want := convertToDate(time.Now()).AddDate(0, 3, 0)
+
+	// Then
+	assertEqual(t, want, result, "")
+}
 
 // helper functions
 func testdb(t *testing.T) *sql.DB {

@@ -292,22 +292,22 @@ func sumAssets(tx *sql.Tx, through time.Time) (int, error) {
 }
 
 // find the first date after today that a bucket becomes <= 0
-// func findWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
-// 	today := convertToDate(time.Now())
-// 	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
-// 		log.Printf("t: %v, bucket: %s", t, bucket)
-// 		balance, err := summarizeBucket(tx, bucket, t)
-// 		log.Printf("TODAY: %v... BALANCE: %v", t, balance )
-// 		if err != nil {
-// 			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
-// 		}
-// 		if balance <= 0 {
-// 			log.Printf("t: %v... balance: %v", t, balance)
-// 			return t, nil
-// 		}
-// 	}
-// 	return time.Now(), nil
-// }
+func findWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
+	today := convertToDate(time.Now())
+	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
+		log.Printf("t: %v, bucket: %s", t, bucket)
+		balance, err := summarizeBucket(tx, bucket, t)
+		log.Printf("TODAY: %v... BALANCE: %v", t, balance )
+		if err != nil {
+			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
+		}
+		if balance <= 0 {
+			log.Printf("t: %v... balance: %v", t, balance)
+			return t, nil
+		}
+	}
+	return time.Now(), nil
+}
 
 // return a time with year, month, and day values; all other values equal 0
 func convertToDate(t time.Time) time.Time {
