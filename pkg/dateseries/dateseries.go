@@ -9,12 +9,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func CreateSeries(tx *sql.Tx) error {
-	q := `INSERT INTO dateseries (day) VALUES ($1)`
+func UpdateSeries(tx *sql.Tx, d time.Time) error {
+	q := `INSERT OR IGNORE INTO dateseries (day) VALUES ($1)`
 
 	today := ledger.ConvertToDate(time.Now())
 	fmt.Printf("TODAY: %v\n", today)
-	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
+	for t := today; t.Before(d); t = t.AddDate(0, 0, 1) {
 		_, err := tx.Exec(q, t)
 		if err != nil {
 			return fmt.Errorf("CreateSeries() executing insert: %w", err)
