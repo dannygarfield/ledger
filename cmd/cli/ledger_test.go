@@ -115,8 +115,8 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	}
 	tx := testtx(t, db)
 	for _, e := range entries {
-			err := insert(tx, e)
-			assertNoError(t, err, "inserting transaction")
+		err := insert(tx, e)
+		assertNoError(t, err, "inserting transaction")
 	}
 	testcommit(t, tx)
 
@@ -245,7 +245,7 @@ func testdb(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("opening database: %v", err)
 	}
-	schema, err := ioutil.ReadFile("./schema.sql")
+	schema, err := ioutil.ReadFile("../../schema.sql")
 	if err != nil {
 		t.Fatalf("opening schema file: %v", err)
 	}

@@ -297,7 +297,7 @@ func findWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
 	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
 		log.Printf("t: %v, bucket: %s", t, bucket)
 		balance, err := summarizeBucket(tx, bucket, t)
-		log.Printf("TODAY: %v... BALANCE: %v", t, balance )
+		log.Printf("TODAY: %v... BALANCE: %v", t, balance)
 		if err != nil {
 			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
 		}
