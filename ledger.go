@@ -38,7 +38,7 @@ func main() {
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
 	assets := flag.Bool("assets", false, "include only money in your posession")
-	zeroMode := flag.Bool("zero", false, "find when a bucket zeroes out")
+	// zeroMode := flag.Bool("zero", false, "find when a bucket zeroes out")
 	flag.Parse()
 
 	// open connection to the db
@@ -52,7 +52,7 @@ func main() {
 		// instruct user to pick only one mode
 		log.Printf("only use one of -insert or -summary")
 		return
-	} else if !*insertMode && !*summaryMode && !*zeroMode {
+	} else if !*insertMode && !*summaryMode {
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary or --zero")
 		return
@@ -158,17 +158,6 @@ func main() {
 		for b, v := range result {
 			log.Printf("%s: %d", b, v)
 		}
-	} else if *zeroMode && *source != "" {
-		// find when a bucket next has a zero balance
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning sql transaction: %v", err)
-		}
-		d, err := findWhenZero(tx, *source)
-		if err != nil {
-			log.Fatalf("finding when a bucket becomes zero: %v", err)
-		}
-		log.Printf("Bucket %s next becomes zero on %v", *source, d)
 	}
 }
 
@@ -199,7 +188,7 @@ func summarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 	row := tx.QueryRow(q, bucket, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
-		return -1, fmt.Errorf("summarizeBucket - querying rows: %w", err)
+		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
 	}
 	return sum, nil
 }
@@ -303,24 +292,22 @@ func sumAssets(tx *sql.Tx, through time.Time) (int, error) {
 }
 
 // find the first date after today that a bucket becomes <= 0
-func findWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
-	todayBalance, err := summarizeBucket(tx, bucket, time.Now())
-	if err != nil {
-		return time.Now(), fmt.Errorf("findWhenZero() - summarizing balance today of bucket: %w", err)
-	}
-	if todayBalance <= 0 {
-		fmt.Println("bucket is already below zero")
-		return time.Now(), nil
-	}
-
-	today := convertToDate(time.Now())
-	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
-		if balance, _ := summarizeBucket(tx, bucket, t); balance <= 0 {
-			return t, nil
-		}
-	}
-	return time.Now(), nil
-}
+// func findWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
+// 	today := convertToDate(time.Now())
+// 	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
+// 		log.Printf("t: %v, bucket: %s", t, bucket)
+// 		balance, err := summarizeBucket(tx, bucket, t)
+// 		log.Printf("TODAY: %v... BALANCE: %v", t, balance )
+// 		if err != nil {
+// 			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
+// 		}
+// 		if balance <= 0 {
+// 			log.Printf("t: %v... balance: %v", t, balance)
+// 			return t, nil
+// 		}
+// 	}
+// 	return time.Now(), nil
+// }
 
 // return a time with year, month, and day values; all other values equal 0
 func convertToDate(t time.Time) time.Time {
