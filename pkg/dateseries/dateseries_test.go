@@ -1,30 +1,31 @@
-package timeseries
+package dateseries
 
 import (
 	"database/sql"
 	"io/ioutil"
+	"ledger/pkg/ledger"
 	"reflect"
 	"testing"
 	"time"
 )
 
-func testCreateSeries(t *testing.T) {
+func TestCreateSeries(t *testing.T) {
 	// Given
 	db := testdb(t)
 
 	// When
 	tx := testtx(t, db)
-	CreateSeries(tx)
+	err := CreateSeries(tx)
+	assertNoError(t, err, "")
 	testcommit(t, tx)
 
 	// Then
 	tx = testtx(t, db)
-	maxDate, err := GetMaxDate(tx, "timeseries")
+	maxDate, err := GetMaxDate(tx)
 	assertNoError(t, err, "test: getting max date")
 	testcommit(t, tx)
-
-	// Then
-	assertEqual(t, time.Now().AddDate(2, 0, 0), maxDate, "")
+	twoYearsFromNow := ledger.ConvertToDate(time.Now().AddDate(2, 0, -1))
+	assertEqual(t, twoYearsFromNow, maxDate, "")
 
 }
 
