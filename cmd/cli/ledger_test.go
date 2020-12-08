@@ -11,7 +11,7 @@ import (
 func TestInsert(t *testing.T) {
 	// Given
 	db := testdb(t)
-	e := entry{
+	e := Entry{
 		source:      "checking",
 		destination: "credit card",
 		happenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
@@ -20,21 +20,21 @@ func TestInsert(t *testing.T) {
 
 	// When
 	tx := testtx(t, db)
-	err := insert(tx, e)
+	err := Insert(tx, e)
 	assertNoError(t, err, "")
 	testcommit(t, tx)
 
 	// Then
 	{
 		tx := testtx(t, db)
-		result, err := summarizeBucket(tx, e.source, e.happenedAt)
+		result, err := SummarizeBucket(tx, e.source, e.happenedAt)
 		assertNoError(t, err, "summary(source)")
 		testcommit(t, tx)
 		assertEqual(t, -e.amount, result, "source")
 	}
 	{
 		tx := testtx(t, db)
-		result, err := summarizeBucket(tx, e.destination, e.happenedAt)
+		result, err := SummarizeBucket(tx, e.destination, e.happenedAt)
 		assertNoError(t, err, "summary(destination)")
 		testcommit(t, tx)
 		assertEqual(t, e.amount, result, "destination")
@@ -44,13 +44,13 @@ func TestInsert(t *testing.T) {
 func TestInsertRepeatingEntry(t *testing.T) {
 	// Given
 	db := testdb(t)
-	e1 := entry{
+	e1 := Entry{
 		source:      "checking",
 		destination: "IRA",
 		amount:      50,
 		happenedAt:  time.Now(), // repeating write until 2 years from now. setting happenedAt to time.Now() requires less math
 	}
-	e2 := entry{
+	e2 := Entry{
 		source:      "checking",
 		destination: "rent",
 		amount:      50,
@@ -60,11 +60,11 @@ func TestInsertRepeatingEntry(t *testing.T) {
 	// When
 	tx := testtx(t, db)
 	{
-		err := insertRepeating(tx, e1, "weekly")
+		err := InsertRepeating(tx, e1, "weekly")
 		assertNoError(t, err, "inserting weekly entry")
 	}
 	{
-		err := insertRepeating(tx, e2, "monthly")
+		err := InsertRepeating(tx, e2, "monthly")
 		assertNoError(t, err, "inserting repeating entry")
 	}
 	testcommit(t, tx)
@@ -73,14 +73,14 @@ func TestInsertRepeatingEntry(t *testing.T) {
 	endDate := time.Now().AddDate(2, 0, 0)
 	{
 		tx := testtx(t, db)
-		result, err := summarizeBucket(tx, e1.source, endDate)
+		result, err := SummarizeBucket(tx, e1.source, endDate)
 		assertNoError(t, err, "")
 		testcommit(t, tx)
 		assertEqual(t, -e1.amount*105-e2.amount*25, result, "inserting weekly")
 	}
 	{
 		tx := testtx(t, db)
-		result, err := summarizeBucket(tx, e2.destination, endDate)
+		result, err := SummarizeBucket(tx, e2.destination, endDate)
 		assertNoError(t, err, "")
 		testcommit(t, tx)
 		assertEqual(t, e2.amount*25, result, "inserting monthly")
@@ -93,7 +93,7 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	db := testdb(t)
 	earlyDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
 	laterDate := time.Date(2021, 4, 1, 0, 0, 0, 0, time.Local)
-	entries := []entry{
+	entries := []Entry{
 		{
 			source:      "savings",
 			destination: "checking",
@@ -115,14 +115,14 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	}
 	tx := testtx(t, db)
 	for _, e := range entries {
-		err := insert(tx, e)
+		err := Insert(tx, e)
 		assertNoError(t, err, "inserting transaction")
 	}
 	testcommit(t, tx)
 
 	// When
 	tx = testtx(t, db)
-	result, err := summarizeAllThroughDate(tx, earlyDate)
+	result, err := SummarizeAllThroughDate(tx, earlyDate)
 	assertNoError(t, err, "summarizing all buckets through date")
 	testcommit(t, tx)
 	want := map[string]int{
@@ -139,7 +139,7 @@ func TestGetAssets(t *testing.T) {
 	// Given
 	db := testdb(t)
 	entryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
-	entries := []entry{
+	entries := []Entry{
 		{
 			source:      "savings",
 			destination: "checking",
@@ -159,7 +159,7 @@ func TestGetAssets(t *testing.T) {
 			amount:      200,
 		},
 	}
-	buckets := []bucket{
+	buckets := []Bucket{
 		{
 			name:      "savings",
 			asset:     true,
@@ -183,18 +183,18 @@ func TestGetAssets(t *testing.T) {
 	}
 	tx := testtx(t, db)
 	for _, e := range entries {
-		err := insert(tx, e)
+		err := Insert(tx, e)
 		assertNoError(t, err, "inserting entries")
 	}
 	for _, b := range buckets {
-		err := addBucket(tx, b)
+		err := AddBucket(tx, b)
 		assertNoError(t, err, "classifying buckets")
 	}
 	testcommit(t, tx)
 
 	// When
 	tx = testtx(t, db)
-	result, err := sumAssets(tx, entryDate.AddDate(0, 0, 1))
+	result, err := SumAssets(tx, entryDate.AddDate(0, 0, 1))
 	assertNoError(t, err, "summing assets")
 	testcommit(t, tx)
 	want := -entries[1].amount + entries[2].amount
@@ -207,31 +207,31 @@ func TestGetAssets(t *testing.T) {
 func TestWhenZero(t *testing.T) {
 	// Given
 	db := testdb(t)
-	e1 := entry{
+	e1 := Entry{
 		source:      "savings",
 		destination: "checking",
 		happenedAt:  time.Now(),
 		amount:      500,
 	}
-	e2 := entry{
+	e2 := Entry{
 		source:      "checking",
 		destination: "rent",
 		happenedAt:  time.Now(),
 		amount:      150,
 	}
 	tx := testtx(t, db)
-	err := insert(tx, e1)
+	err := Insert(tx, e1)
 	assertNoError(t, err, "inserting one entry")
-	err = insertRepeating(tx, e2, "monthly")
+	err = InsertRepeating(tx, e2, "monthly")
 	assertNoError(t, err, "inserting repeating entry")
 	testcommit(t, tx)
 
 	// When
 	tx = testtx(t, db)
-	result, err := findWhenZero(tx, e2.source)
+	result, err := FindWhenZero(tx, e2.source)
 	assertNoError(t, err, "finding when bucket hits zero")
 	testcommit(t, tx)
-	want := convertToDate(time.Now()).AddDate(0, 3, 0)
+	want := ConvertToDate(time.Now()).AddDate(0, 3, 0)
 
 	// Then
 	assertEqual(t, want, result, "")
