@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS transactions
 );
 
 CREATE TABLE IF NOT EXISTS buckets
-(name TEXT PRIMARY KEY
+(id INTEGER PRIMARY KEY
+, name TEXT
 , asset INT
 , liquidity TEXT
 );

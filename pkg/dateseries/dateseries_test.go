@@ -14,9 +14,36 @@ func TestCreateSeries(t *testing.T) {
 	db := testdb(t)
 
 	// When
-    end := time.Now().AddDate(2,0,0)
+	end := time.Now().AddDate(2, 0, 0)
+	{
+		tx := testtx(t, db)
+		err := UpdateSeries(tx, end)
+		assertNoError(t, err, "")
+		testcommit(t, tx)
+	}
+
+	// Then
 	tx := testtx(t, db)
-	err := UpdateSeries(tx, end)
+	maxDate, err := GetMaxDate(tx)
+	assertNoError(t, err, "test: getting max date")
+	testcommit(t, tx)
+	endFormatted := ledger.ConvertToDate(end)
+	assertEqual(t, endFormatted, maxDate, "")
+}
+
+func TestUpdateSeries(t *testing.T) {
+	// Given
+	db := testdb(t)
+	end1 := time.Now().AddDate(2, 0, 0)
+	tx := testtx(t, db)
+	err := UpdateSeries(tx, end1)
+	assertNoError(t, err, "")
+	testcommit(t, tx)
+
+	// When
+	newEnd := time.Now().AddDate(2, 0, 2)
+	tx = testtx(t, db)
+	err = UpdateSeries(tx, newEnd)
 	assertNoError(t, err, "")
 	testcommit(t, tx)
 
@@ -25,38 +52,13 @@ func TestCreateSeries(t *testing.T) {
 	maxDate, err := GetMaxDate(tx)
 	assertNoError(t, err, "test: getting max date")
 	testcommit(t, tx)
-	endFormatted := ledger.ConvertToDate(end)
-
-    assertEqual(t, endFormatted, maxDate, "")
-}
-
-func TestUpdateSeries(t *testing.T) {
-    // Given
-    db := testdb(t)
-    end1 := time.Now().AddDate(2,0,0)
-	tx := testtx(t, db)
-	err := UpdateSeries(tx, end1)
-	assertNoError(t, err, "")
-	testcommit(t, tx)
-
-    // When
-    newEnd := time.Now().AddDate(2,0,2)
-    tx = testtx(t, db)
-	err = UpdateSeries(tx, newEnd)
-	assertNoError(t, err, "")
-	testcommit(t, tx)
-
-    // Then
-	tx = testtx(t, db)
-	maxDate, err := GetMaxDate(tx)
-	assertNoError(t, err, "test: getting max date")
-	testcommit(t, tx)
 	newEndFormatted := ledger.ConvertToDate(newEnd)
 
-    assertEqual(t, newEndFormatted, maxDate, "")
+	assertEqual(t, newEndFormatted, maxDate, "")
 
 }
 
+// Helper functions
 func testdb(t *testing.T) *sql.DB {
 	t.Helper()
 
