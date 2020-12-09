@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func TestInsert(t *testing.T) {
+func TestInsertEntry(t *testing.T) {
 	// Given
 	db := testdb(t)
 	e := Entry{
@@ -21,7 +21,7 @@ func TestInsert(t *testing.T) {
 
 	// When
 	tx := testtx(t, db)
-	err := Insert(tx, e)
+	err := InsertEntry(tx, e)
 	assertNoError(t, err, "")
 	testcommit(t, tx)
 
@@ -61,11 +61,11 @@ func TestInsertRepeatingEntry(t *testing.T) {
 	// When
 	tx := testtx(t, db)
 	{
-		err := InsertRepeating(tx, e1, "weekly")
+		err := InsertRepeatingEntry(tx, e1, "weekly")
 		assertNoError(t, err, "inserting weekly entry")
 	}
 	{
-		err := InsertRepeating(tx, e2, "monthly")
+		err := InsertRepeatingEntry(tx, e2, "monthly")
 		assertNoError(t, err, "inserting repeating entry")
 	}
 	testcommit(t, tx)
@@ -116,14 +116,14 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	}
 	tx := testtx(t, db)
 	for _, e := range entries {
-		err := Insert(tx, e)
-		assertNoError(t, err, "inserting transaction")
+		err := InsertEntry(tx, e)
+		assertNoError(t, err, "inserting entry")
 	}
 	testcommit(t, tx)
 
 	// When
 	tx = testtx(t, db)
-	result, err := SummarizeAllThroughDate(tx, earlyDate)
+	result, err := SummarizeLedger(tx, earlyDate)
 	assertNoError(t, err, "summarizing all buckets through date")
 	testcommit(t, tx)
 	want := map[string]int{
@@ -184,7 +184,7 @@ func TestGetAssets(t *testing.T) {
 	}
 	tx := testtx(t, db)
 	for _, e := range entries {
-		err := Insert(tx, e)
+		err := InsertEntry(tx, e)
 		assertNoError(t, err, "inserting entries")
 	}
 	for _, b := range buckets {
@@ -221,9 +221,9 @@ func TestWhenZero(t *testing.T) {
 		Amount:      150,
 	}
 	tx := testtx(t, db)
-	err := Insert(tx, e1)
+	err := InsertEntry(tx, e1)
 	assertNoError(t, err, "inserting one entry")
-	err = InsertRepeating(tx, e2, "monthly")
+	err = InsertRepeatingEntry(tx, e2, "monthly")
 	assertNoError(t, err, "inserting repeating entry")
 	testcommit(t, tx)
 

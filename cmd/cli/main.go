@@ -53,7 +53,7 @@ func main() {
 		}
 		// insert all entries
 		for _, e := range entries {
-			if err := ledger.Insert(tx, e); err != nil {
+			if err := ledger.InsertEntry(tx, e); err != nil {
 				log.Fatalf("inserting single entry")
 			}
 		}
@@ -79,7 +79,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		if err := ledger.InsertRepeating(tx, e, *repeat); err != nil {
+		if err := ledger.InsertRepeatingEntry(tx, e, *repeat); err != nil {
 			log.Fatalf("inserting a repeating entry: %v", err)
 		}
 		if err := tx.Commit(); err != nil {
@@ -102,7 +102,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		if err := ledger.Insert(tx, e); err != nil {
+		if err := ledger.InsertEntry(tx, e); err != nil {
 			log.Fatalf("inserting single entry")
 		}
 		if err := tx.Commit(); err != nil {
@@ -138,7 +138,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		result, err := ledger.SummarizeAllThroughDate(tx, td)
+		result, err := ledger.SummarizeLedger(tx, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
@@ -154,7 +154,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		result, err := ledger.SummarizeAllThroughDate(tx, time.Now())
+		result, err := ledger.SummarizeLedger(tx, time.Now())
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
