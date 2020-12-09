@@ -35,8 +35,8 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
 	// Validate order of columns
-	if header[0] != "source" || header[1] != "destination" || header[2] != "EntryDate" || header[3] != "amount" {
-		log.Fatalln("Columns must be in order: source, destination, EntryDate, amount")
+	if header[0] != "source" || header[1] != "destination" || header[2] != "entrydate" || header[3] != "amount" {
+		log.Fatalln("Columns must be in order: source, destination, entrydate, amount")
 	}
 
 	// construct slice of buckets to return
