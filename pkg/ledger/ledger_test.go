@@ -188,7 +188,7 @@ func TestGetAssets(t *testing.T) {
 		assertNoError(t, err, "inserting entries")
 	}
 	for _, b := range buckets {
-		err := ledgerbucket.AddBucket(tx, b)
+		err := ledgerbucket.InsertBucket(tx, b)
 		assertNoError(t, err, "classifying buckets")
 	}
 	testcommit(t, tx)

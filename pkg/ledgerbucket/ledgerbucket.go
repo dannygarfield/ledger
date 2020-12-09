@@ -13,7 +13,7 @@ type Bucket struct {
 }
 
 // add a bucket to the db
-func AddBucket(tx *sql.Tx, bucket Bucket) error {
+func InsertBucket(tx *sql.Tx, bucket Bucket) error {
 	q := `INSERT INTO buckets
 		(name, asset, liquidity)
 		VALUES ($1, $2, $3)`
