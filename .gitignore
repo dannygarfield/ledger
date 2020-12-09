@@ -1,3 +1,4 @@
 db.sqlite3
 query.sql
 .DS_Store
+csv/
