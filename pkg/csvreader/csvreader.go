@@ -6,6 +6,7 @@ import (
 	"io"
 	"ledger/pkg/ledger"
 	"ledger/pkg/ledgerbucket"
+	"log"
 	"os"
 	"strconv"
 )
@@ -28,12 +29,16 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating the reader: %w", err)
 	}
-	// skip the header
-	_, err = reader.Read()
+	// read the header
+	header, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
-	// Validate order of columns -- DO LATER
+	// Validate order of columns
+	if header[0] != "source" || header[1] != "destination" || header[2] != "happenedAt" || header[3] != "amount" {
+		log.Fatalln("Columns must be in order: source, destination, happenedAt, amount")
+	}
+
 	// construct slice of buckets to return
 	var entries []ledger.Entry
 	// Read rows and construct and append Entry objects
@@ -73,12 +78,15 @@ func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating the reader: %w", err)
 	}
-	// skip the header
-	_, err = reader.Read()
+	// read the header
+	header, err := reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
-	// Validate order of columns -- DO LATER
+	// Validate order of columns
+	if header[0] != "name" || header[1] != "asset" || header[2] != "liquidity" {
+		log.Fatalln("Columns must be in order: source, destination, happenedAt, amount")
+	}
 	// construct slice of entries to return
 	var buckets []ledgerbucket.Bucket
 	// Read rows and construct and append Entry objects
