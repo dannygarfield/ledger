@@ -18,7 +18,7 @@ func main() {
 	through := flag.String("through", "", "date through which to summarize")
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
-	happenedAt := flag.String("happenedAt", "", "date of transaction")
+	EntryDate := flag.String("EntryDate", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
 	assets := flag.Bool("assets", false, "include only money in your posession")
@@ -64,7 +64,7 @@ func main() {
 
 	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
-		d, err := ledger.ParseDate(*happenedAt)
+		d, err := ledger.ParseDate(*EntryDate)
 		if err != nil {
 			log.Print(err)
 			return
@@ -72,7 +72,7 @@ func main() {
 		e := ledger.Entry{
 			Source:      *source,
 			Destination: *destination,
-			HappenedAt:  d,
+			EntryDate:  d,
 			Amount:      *amount,
 		}
 		tx, err := db.Begin()
@@ -87,7 +87,7 @@ func main() {
 		}
 	} else if *insertMode {
 		// insert a transaction to the db
-		d, err := ledger.ParseDate(*happenedAt)
+		d, err := ledger.ParseDate(*EntryDate)
 		if err != nil {
 			log.Print(err)
 			return
@@ -95,7 +95,7 @@ func main() {
 		e := ledger.Entry{
 			Source:      *source,
 			Destination: *destination,
-			HappenedAt:  d,
+			EntryDate:  d,
 			Amount:      *amount,
 		}
 		tx, err := db.Begin()

@@ -35,8 +35,8 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
 	// Validate order of columns
-	if header[0] != "source" || header[1] != "destination" || header[2] != "happenedAt" || header[3] != "amount" {
-		log.Fatalln("Columns must be in order: source, destination, happenedAt, amount")
+	if header[0] != "source" || header[1] != "destination" || header[2] != "EntryDate" || header[3] != "amount" {
+		log.Fatalln("Columns must be in order: source, destination, EntryDate, amount")
 	}
 
 	// construct slice of buckets to return
@@ -49,8 +49,8 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		} else if err != nil {
 			return nil, fmt.Errorf("Reading a row: %v", err)
 		}
-		// convert HappenedAt value to time.Time
-		happenedAt, err := ledger.ParseDate(record[2])
+		// convert EntryDate value to time.Time
+		EntryDate, err := ledger.ParseDate(record[2])
 		if err != nil {
 			return nil, fmt.Errorf("Parsing string to time.Time: %w", err)
 		}
@@ -63,7 +63,7 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		e := ledger.Entry{
 			Source:      record[0],
 			Destination: record[1],
-			HappenedAt:  happenedAt,
+			EntryDate:  EntryDate,
 			Amount:      amount,
 		}
 		entries = append(entries, e)
@@ -85,7 +85,7 @@ func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
 	}
 	// Validate order of columns
 	if header[0] != "name" || header[1] != "asset" || header[2] != "liquidity" {
-		log.Fatalln("Columns must be in order: source, destination, happenedAt, amount")
+		log.Fatalln("Columns must be in order: source, destination, EntryDate, amount")
 	}
 	// construct slice of entries to return
 	var buckets []ledgerbucket.Bucket

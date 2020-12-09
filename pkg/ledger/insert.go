@@ -12,7 +12,7 @@ import (
 type Entry struct {
 	Source      string
 	Destination string
-	HappenedAt  time.Time
+	EntryDate  time.Time
 	Amount      int
 }
 
@@ -21,7 +21,7 @@ func InsertEntry(tx *sql.Tx, e Entry) error {
 	q := `INSERT INTO entries
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
-	_, err := tx.Exec(q, e.Source, e.Destination, e.HappenedAt, e.Amount)
+	_, err := tx.Exec(q, e.Source, e.Destination, e.EntryDate, e.Amount)
 	if err != nil {
 		return fmt.Errorf("insert() - executing the insert: %w", err)
 	}
@@ -43,11 +43,11 @@ func InsertRepeatingEntry(tx *sql.Tx, e Entry, freq string) error {
 		freqDay = 7
 	}
 	endDate := time.Now().AddDate(2, 0, 0)
-	for e.HappenedAt.Before(endDate) {
-		if _, err := tx.Exec(q, e.Source, e.Destination, e.HappenedAt, e.Amount); err != nil {
+	for e.EntryDate.Before(endDate) {
+		if _, err := tx.Exec(q, e.Source, e.Destination, e.EntryDate, e.Amount); err != nil {
 			return fmt.Errorf("insertRepeating() - inserting transactions: %w", err)
 		}
-		e.HappenedAt = e.HappenedAt.AddDate(0, freqMonth, freqDay)
+		e.EntryDate = e.EntryDate.AddDate(0, freqMonth, freqDay)
 	}
 	return nil
 }

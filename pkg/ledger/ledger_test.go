@@ -15,7 +15,7 @@ func TestInsertEntry(t *testing.T) {
 	e := Entry{
 		Source:      "checking",
 		Destination: "credit card",
-		HappenedAt:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+		EntryDate:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
 		Amount:      120,
 	}
 
@@ -28,14 +28,14 @@ func TestInsertEntry(t *testing.T) {
 	// Then
 	{
 		tx := testtx(t, db)
-		result, err := SummarizeBucket(tx, e.Source, e.HappenedAt)
+		result, err := SummarizeBucket(tx, e.Source, e.EntryDate)
 		assertNoError(t, err, "summary(source)")
 		testcommit(t, tx)
 		assertEqual(t, -e.Amount, result, "source")
 	}
 	{
 		tx := testtx(t, db)
-		result, err := SummarizeBucket(tx, e.Destination, e.HappenedAt)
+		result, err := SummarizeBucket(tx, e.Destination, e.EntryDate)
 		assertNoError(t, err, "summary(destination)")
 		testcommit(t, tx)
 		assertEqual(t, e.Amount, result, "destination")
@@ -49,13 +49,13 @@ func TestInsertRepeatingEntry(t *testing.T) {
 		Source:      "checking",
 		Destination: "IRA",
 		Amount:      50,
-		HappenedAt:  time.Now(), // repeating write until 2 years from now. setting happenedAt to time.Now() requires less math
+		EntryDate:  time.Now(), // repeating write until 2 years from now. setting EntryDate to time.Now() requires less math
 	}
 	e2 := Entry{
 		Source:      "checking",
 		Destination: "rent",
 		Amount:      50,
-		HappenedAt:  time.Now(),
+		EntryDate:  time.Now(),
 	}
 
 	// When
@@ -89,7 +89,7 @@ func TestInsertRepeatingEntry(t *testing.T) {
 
 }
 
-func TestSummarizeAllThroughDate(t *testing.T) {
+func TestSummarizeLedger(t *testing.T) {
 	// Given
 	db := testdb(t)
 	earlyDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
@@ -98,19 +98,19 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 		{
 			Source:      "savings",
 			Destination: "checking",
-			HappenedAt:  earlyDate,
+			EntryDate:  earlyDate,
 			Amount:      500,
 		},
 		{
 			Source:      "checking",
 			Destination: "credit card",
-			HappenedAt:  earlyDate,
+			EntryDate:  earlyDate,
 			Amount:      1250,
 		},
 		{
 			Source:      "checking",
 			Destination: "credit card",
-			HappenedAt:  laterDate,
+			EntryDate:  laterDate,
 			Amount:      20,
 		},
 	}
@@ -126,10 +126,30 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 	result, err := SummarizeLedger(tx, earlyDate)
 	assertNoError(t, err, "summarizing all buckets through date")
 	testcommit(t, tx)
-	want := map[string]int{
-		"checking":    -750,
-		"credit card": 1250,
-		"savings":     -500,
+	want := []struct {
+		bucket    string
+		amount    int
+		asset     bool
+		liquidity string
+	}{
+		{
+			bucket:    "checking",
+			amount:    -750,
+			asset:     true,
+			liquidity: "full",
+		},
+		{
+			bucket:    "savings",
+			amount:    -500,
+			asset:     true,
+			liquidity: "full",
+		},
+		{
+			bucket:    "credit card",
+			amount:    1250,
+			asset:     false,
+			liquidity: "",
+		},
 	}
 
 	// Then
@@ -139,24 +159,24 @@ func TestSummarizeAllThroughDate(t *testing.T) {
 func TestGetAssets(t *testing.T) {
 	// Given
 	db := testdb(t)
-	entryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
+	EntryDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
 	entries := []Entry{
 		{
 			Source:      "savings",
 			Destination: "checking",
-			HappenedAt:  entryDate,
+			EntryDate:  EntryDate,
 			Amount:      500,
 		},
 		{
 			Source:      "checking",
 			Destination: "credit card",
-			HappenedAt:  entryDate,
+			EntryDate:  EntryDate,
 			Amount:      1250,
 		},
 		{
 			Source:      "paycheck",
 			Destination: "checking",
-			HappenedAt:  entryDate,
+			EntryDate:  EntryDate,
 			Amount:      200,
 		},
 	}
@@ -195,7 +215,7 @@ func TestGetAssets(t *testing.T) {
 
 	// When
 	tx = testtx(t, db)
-	result, err := SumAssets(tx, entryDate.AddDate(0, 0, 1))
+	result, err := SumAssets(tx, EntryDate.AddDate(0, 0, 1))
 	assertNoError(t, err, "summing assets")
 	testcommit(t, tx)
 	want := -entries[1].Amount + entries[2].Amount
@@ -211,13 +231,13 @@ func TestWhenZero(t *testing.T) {
 	e1 := Entry{
 		Source:      "savings",
 		Destination: "checking",
-		HappenedAt:  time.Now(),
+		EntryDate:  time.Now(),
 		Amount:      500,
 	}
 	e2 := Entry{
 		Source:      "checking",
 		Destination: "rent",
-		HappenedAt:  time.Now(),
+		EntryDate:  time.Now(),
 		Amount:      150,
 	}
 	tx := testtx(t, db)
