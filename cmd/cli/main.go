@@ -42,7 +42,7 @@ func main() {
 		log.Printf("specify one of -insert or -summary or --zero")
 		return
 	} else if *insertMode && *csvMode {
-		entries, err := csvreader.InsertCsv("records.csv")
+		entries, err := csvreader.CsvToEntries("records.csv")
 		if err != nil {
 			log.Fatalf("Reading csv")
 		}
