@@ -3,7 +3,6 @@ package ledger
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -130,14 +129,11 @@ func SumAssets(tx *sql.Tx, through time.Time) (int, error) {
 func FindWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
 	today := ConvertToDate(time.Now())
 	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
-		log.Printf("t: %v, bucket: %s", t, bucket)
 		balance, err := SummarizeBucket(tx, bucket, t)
-		log.Printf("TODAY: %v... BALANCE: %v", t, balance)
 		if err != nil {
 			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
 		}
 		if balance <= 0 {
-			log.Printf("t: %v... balance: %v", t, balance)
 			return t, nil
 		}
 	}

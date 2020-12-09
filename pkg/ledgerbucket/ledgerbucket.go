@@ -3,6 +3,8 @@ package ledgerbucket
 import (
 	"database/sql"
 	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // a Bucket describes ownership and accessibility of money
@@ -28,4 +30,21 @@ func InsertBucket(tx *sql.Tx, bucket Bucket) error {
 		return fmt.Errorf("addBuckets() - executing query: %w", err)
 	}
 	return nil
+}
+
+func ShowBuckets(tx *sql.Tx) ([]Bucket, error) {
+	q := `SELECT name, asset, liquidity FROM buckets`
+	rows, err := tx.Query(q)
+	if err != nil {
+		return nil, fmt.Errorf("querying db (%w)", err)
+	}
+	var buckets []Bucket
+	for rows.Next() {
+		b := Bucket{}
+		if err := rows.Scan(&b.Name, &b.Asset, &b.Liquidity); err != nil {
+			return nil, fmt.Errorf("scanning rows (%w)", err)
+		}
+		buckets = append(buckets, b)
+	}
+	return buckets, nil
 }

@@ -96,7 +96,7 @@ func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
 		} else {
 			asset = false
 		}
-		// construct the entry
+		// construct the bucket
 		b := ledgerbucket.Bucket{
 			Name:      record[0],
 			Asset:     asset,

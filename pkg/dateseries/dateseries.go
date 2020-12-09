@@ -13,7 +13,6 @@ func UpdateSeries(tx *sql.Tx, d time.Time) error {
 	q := `INSERT OR IGNORE INTO dateseries (day) VALUES ($1)`
 
 	today := ledger.ConvertToDate(time.Now())
-	fmt.Printf("TODAY: %v\n", today)
 	for t := today; t.Before(d); t = t.AddDate(0, 0, 1) {
 		_, err := tx.Exec(q, t)
 		if err != nil {
@@ -31,7 +30,6 @@ func GetMaxDate(tx *sql.Tx) (time.Time, error) {
 	if err := row.Scan(&d); err != nil {
 		return zeroTime, fmt.Errorf("GetMaxDate() scanning row")
 	}
-	fmt.Printf("var d: %s\n", d)
 	day, err := time.Parse("2006-01-02 15:04:05-07:00", d)
 	if err != nil {
 		return zeroTime, fmt.Errorf("GetMaxDate() parsing date")
