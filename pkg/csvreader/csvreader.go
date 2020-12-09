@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"ledger/pkg/ledger"
+	"ledger/pkg/ledgerbucket"
 	"os"
 	"strconv"
 )
@@ -30,7 +31,7 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 	// skip the header
 	_, err = reader.Read()
 	if err != nil {
-		return nil, fmt.Errorf("An error encountered ::", err)
+		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
 	// Validate order of columns -- DO LATER
 	// construct slice of buckets to return
@@ -66,7 +67,7 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 }
 
 // convert a CSV to a slice of buckets
-func CsvToBuckets(filepath string) ([]ledger.Bucket, error) {
+func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
 	// create the reader
 	reader, err := csvReader(filepath)
 	if err != nil {
@@ -75,11 +76,11 @@ func CsvToBuckets(filepath string) ([]ledger.Bucket, error) {
 	// skip the header
 	_, err = reader.Read()
 	if err != nil {
-		return nil, fmt.Errorf("An error encountered ::", err)
+		return nil, fmt.Errorf("Reading the header row: %w", err)
 	}
 	// Validate order of columns -- DO LATER
 	// construct slice of entries to return
-	var buckets []ledger.Bucket
+	var buckets []ledgerbucket.Bucket
 	// Read rows and construct and append Entry objects
 	for i := 0; ; i += 1 {
 		record, err := reader.Read()
@@ -90,16 +91,16 @@ func CsvToBuckets(filepath string) ([]ledger.Bucket, error) {
 		}
 		// convert asset value to bool
 		var asset bool
-		if record[1] == true {
-			asset = 1
+		if record[1] == "true" {
+			asset = true
 		} else {
-			asset = 0
+			asset = false
 		}
 		// construct the entry
-		b := ledger.Bucket{
+		b := ledgerbucket.Bucket{
 			Name:      record[0],
-			Asset: asset,
-			Liquidity:  record[2],
+			Asset:     asset,
+			Liquidity: record[2],
 		}
 		buckets = append(buckets, b)
 	}

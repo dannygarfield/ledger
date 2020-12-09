@@ -17,13 +17,6 @@ type Entry struct {
 	Amount      int
 }
 
-// a Bucket describes ownership and accessibility of money
-type Bucket struct {
-	Name      string
-	Asset     bool
-	Liquidity string
-}
-
 // Insert an entry
 func Insert(tx *sql.Tx, e Entry) error {
 	q := `INSERT INTO transactions
@@ -111,24 +104,6 @@ func ParseDate(s string) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("parseDate() - parsing time: %w", err)
 	}
 	return d, nil
-}
-
-// add buckets to the db
-func AddBucket(tx *sql.Tx, bucket Bucket) error {
-	q := `INSERT INTO buckets
-		(name, asset, liquidity)
-		VALUES ($1, $2, $3)`
-	var x int
-	if bucket.Asset == true {
-		x = 1
-	} else {
-		x = 0
-	}
-	_, err := tx.Exec(q, bucket.Name, x, bucket.Liquidity)
-	if err != nil {
-		return fmt.Errorf("addBuckets() - executing query: %w", err)
-	}
-	return nil
 }
 
 // get total assets owned on a given date

@@ -3,6 +3,7 @@ package ledger
 import (
 	"database/sql"
 	"io/ioutil"
+	"ledger/pkg/ledgerbucket"
 	"reflect"
 	"testing"
 	"time"
@@ -159,7 +160,7 @@ func TestGetAssets(t *testing.T) {
 			Amount:      200,
 		},
 	}
-	buckets := []Bucket{
+	buckets := []ledgerbucket.Bucket{
 		{
 			Name:      "savings",
 			Asset:     true,
@@ -187,7 +188,7 @@ func TestGetAssets(t *testing.T) {
 		assertNoError(t, err, "inserting entries")
 	}
 	for _, b := range buckets {
-		err := AddBucket(tx, b)
+		err := ledgerbucket.AddBucket(tx, b)
 		assertNoError(t, err, "classifying buckets")
 	}
 	testcommit(t, tx)
