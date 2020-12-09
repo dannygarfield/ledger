@@ -18,7 +18,7 @@ type Entry struct {
 
 // Insert an entry
 func InsertEntry(tx *sql.Tx, e Entry) error {
-	q := `INSERT INTO transactions
+	q := `INSERT INTO entries
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
 	_, err := tx.Exec(q, e.Source, e.Destination, e.HappenedAt, e.Amount)
@@ -30,7 +30,7 @@ func InsertEntry(tx *sql.Tx, e Entry) error {
 
 // insert a transaction that repeats weekly or monthly
 func InsertRepeatingEntry(tx *sql.Tx, e Entry, freq string) error {
-	q := `INSERT INTO transactions
+	q := `INSERT INTO entries
 		(source, destination, happened_at, amount)
 		VALUES ($1, $2, $3, $4);`
 	var freqMonth int

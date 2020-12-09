@@ -9,9 +9,9 @@ import (
 // get net amounts of all buckets through a given date
 func SummarizeLedger(tx *sql.Tx, through time.Time) (map[string]int, error) {
 	q := `SELECT account, sum(amount) FROM (
-		SELECT amount, happened_at, destination AS account FROM transactions
+		SELECT amount, happened_at, destination AS account FROM entries
 		UNION ALL
-		SELECT -amount, happened_at, source AS account FROM transactions
+		SELECT -amount, happened_at, source AS account FROM entries
 		)
 		WHERE date(happened_at) <= date($1)
 		GROUP BY account
@@ -36,9 +36,9 @@ func SummarizeLedger(tx *sql.Tx, through time.Time) (map[string]int, error) {
 // get net amount of a single bucket through a given date
 func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
 	q := `SELECT sum(amount) FROM (
-		SELECT amount, happened_at FROM transactions WHERE destination = $1
+		SELECT amount, happened_at FROM entries WHERE destination = $1
 		UNION ALL
-		SELECT -amount, happened_at from transactions where source = $1
+		SELECT -amount, happened_at from entries where source = $1
 		)
 		WHERE date(happened_at) <= date($2)
 		ORDER BY sum(amount) DESC;`
@@ -54,10 +54,10 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 func SumAssets(tx *sql.Tx, through time.Time) (int, error) {
 	q := `SELECT sum(amount) FROM (
     	SELECT destination AS account, amount, happened_at
-		FROM transactions
+		FROM entries
         UNION ALL
         SELECT source AS account, -amount, happened_at
-		FROM transactions
+		FROM entries
         ) t
         LEFT JOIN buckets b
         ON t.account = b.name
