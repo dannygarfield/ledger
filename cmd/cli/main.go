@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
 	"log"
 	"time"
+	"fmt"
 )
 
 func main() {
@@ -21,6 +23,7 @@ func main() {
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
 	assets := flag.Bool("assets", false, "include only money in your posession")
+	csvMode := flag.Bool("csv", false, "inert a transaction using a csv")
 	// zeroMode := flag.Bool("zero", false, "find when a bucket zeroes out")
 	flag.Parse()
 
@@ -31,14 +34,52 @@ func main() {
 	}
 	defer db.Close()
 
+	// tx, err := db.Begin()
+	// if err != nil {
+	// 	log.Fatalf("beginning sql transaction: %v", err)
+	// }
+	// for d := time.Now(); d.Before(time.Now().AddDate(0, 6, 0)); d = d.AddDate(0, 0, 1) {
+	// 	balance := make(map[string]int)
+	// 	balance, err := ledger.SummarizeAllThroughDate(tx, d)
+	// 	if err != nil {
+	// 		log.Fatalf("summarizing: %v", err)
+	// 	}
+	// 	log.Printf("BALANCE for %v: %v", ledger.ConvertToDate(d), balance)
+	// }
+	// if err := tx.Commit(); err != nil {
+	// 	log.Fatalf("committing sql transaction: %v", err)
+	// }
+
 	if *insertMode && *summaryMode {
 		// instruct user to pick only one mode
 		log.Printf("only use one of -insert or -summary")
 		return
-	} else if !*insertMode && !*summaryMode {
+	} else if !*insertMode && !*summaryMode{
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary or --zero")
 		return
+	} else if *insertMode && *csvMode {
+		entries, err := csvreader.InsertCsv()
+		if err != nil {
+			log.Fatalf("Reading csv")
+		}
+		fmt.Println("ENTRIES: %v", entries)
+		// begin the sql transaction
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatalf("beginning sql transaction: %v", err)
+		}
+		// insert all entries
+		for _, e := range entries {
+			if err := ledger.Insert(tx, e); err != nil {
+				log.Fatalf("inserting single entry")
+			}
+		}
+		// commit the sql transaction
+		if err := tx.Commit(); err != nil {
+			log.Fatalf("committing sql transaction: %v", err)
+		}
+
 	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
 		d, err := ledger.ParseDate(*happenedAt)

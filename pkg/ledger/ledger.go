@@ -24,7 +24,7 @@ type Bucket struct {
 	Liquidity string
 }
 
-// Insert a slice of entries
+// Insert an entry
 func Insert(tx *sql.Tx, e Entry) error {
 	q := `INSERT INTO transactions
 		(source, destination, happened_at, amount)
