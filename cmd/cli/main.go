@@ -7,7 +7,6 @@ import (
 	"ledger/pkg/ledger"
 	"log"
 	"time"
-	"fmt"
 )
 
 func main() {
@@ -34,22 +33,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// tx, err := db.Begin()
-	// if err != nil {
-	// 	log.Fatalf("beginning sql transaction: %v", err)
-	// }
-	// for d := time.Now(); d.Before(time.Now().AddDate(0, 6, 0)); d = d.AddDate(0, 0, 1) {
-	// 	balance := make(map[string]int)
-	// 	balance, err := ledger.SummarizeAllThroughDate(tx, d)
-	// 	if err != nil {
-	// 		log.Fatalf("summarizing: %v", err)
-	// 	}
-	// 	log.Printf("BALANCE for %v: %v", ledger.ConvertToDate(d), balance)
-	// }
-	// if err := tx.Commit(); err != nil {
-	// 	log.Fatalf("committing sql transaction: %v", err)
-	// }
-
 	if *insertMode && *summaryMode {
 		// instruct user to pick only one mode
 		log.Printf("only use one of -insert or -summary")
@@ -59,11 +42,10 @@ func main() {
 		log.Printf("specify one of -insert or -summary or --zero")
 		return
 	} else if *insertMode && *csvMode {
-		entries, err := csvreader.InsertCsv()
+		entries, err := csvreader.InsertCsv("records.csv")
 		if err != nil {
 			log.Fatalf("Reading csv")
 		}
-		fmt.Println("ENTRIES: %v", entries)
 		// begin the sql transaction
 		tx, err := db.Begin()
 		if err != nil {

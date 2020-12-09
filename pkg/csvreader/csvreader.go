@@ -28,7 +28,7 @@ func InsertCsv(filepath string) ([]ledger.Entry, error) {
 	}
 
 	// skip the header
-	_, err := reader.Read()
+	_, err = reader.Read()
 	if err != nil {
 		return nil, fmt.Errorf("An error encountered ::", err)
 	}
@@ -65,7 +65,6 @@ func InsertCsv(filepath string) ([]ledger.Entry, error) {
 			HappenedAt:  happenedAt,
 			Amount:      amount,
 		}
-		fmt.Printf("Entry: %v \n", e)
 
 		entries = append(entries, e)
 	}
