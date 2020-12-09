@@ -10,7 +10,7 @@ import (
 // a Bucket describes ownership and accessibility of money
 type Bucket struct {
 	Name      string
-	Asset     bool
+	Asset     int
 	Liquidity string
 }
 
@@ -19,13 +19,7 @@ func InsertBucket(tx *sql.Tx, bucket Bucket) error {
 	q := `INSERT INTO buckets
 		(name, asset, liquidity)
 		VALUES ($1, $2, $3)`
-	var x int
-	if bucket.Asset == true {
-		x = 1
-	} else {
-		x = 0
-	}
-	_, err := tx.Exec(q, bucket.Name, x, bucket.Liquidity)
+	_, err := tx.Exec(q, bucket.Name, bucket.Asset, bucket.Liquidity)
 	if err != nil {
 		return fmt.Errorf("addBuckets() - executing query: %w", err)
 	}

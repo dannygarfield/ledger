@@ -97,17 +97,16 @@ func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
 		} else if err != nil {
 			return nil, fmt.Errorf("Reading a row: %v", err)
 		}
-		// convert asset value to bool
-		var asset bool
-		if record[1] == "true" {
-			asset = true
-		} else {
-			asset = false
+
+		// convert string to int
+		a, err := strconv.Atoi(record[1])
+		if err != nil {
+			return nil, fmt.Errorf("Converting string to int: %w", err)
 		}
 		// construct the bucket
 		b := ledgerbucket.Bucket{
 			Name:      record[0],
-			Asset:     asset,
+			Asset:     a,
 			Liquidity: record[2],
 		}
 		buckets = append(buckets, b)

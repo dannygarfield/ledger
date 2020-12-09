@@ -20,17 +20,18 @@ func main() {
 	csvMode := flag.Bool("csv", false, "inert a transaction using a csv")
 	filepath := flag.String("filepath", "", "path to csv file to read")
 	object := flag.String("object", "entry", "object to work on: 'entry' or 'bucket'")
+	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
+
+	asset := flag.Int("asset", 0, "denotes if a bucket is considered an asset (in your posession)")
+	liquidity := flag.String("liquidity", "", "liquidity of a bucket: 'low', 'medium', 'full', or the empty string")
 
 	through := flag.String("through", "", "date through which to summarize")
 
 	source := flag.String("source", "", "bucket from which the amount is taken")
 	destination := flag.String("destination", "", "bucket into which the amount is deposited")
-	entrydate := flag.String("EntryDate", "", "date of transaction")
+	entrydate := flag.String("entrydate", "", "date of transaction")
 	amount := flag.Int("amount", 0, "amount in cents of the transaction")
 
-	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
-
-	assets := flag.Bool("assets", false, "include only money in your posession")
 	// zeroMode := flag.Bool("zero", false, "find when a bucket zeroes out")
 	flag.Parse()
 
@@ -114,6 +115,22 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
+	} else if *insertMode && *object == "bucket" {
+		b := ledgerbucket.Bucket{
+			Name:      *source,
+			Asset:     *asset,
+			Liquidity: *liquidity,
+		}
+		tx, err := db.Begin()
+		if err != nil {
+			log.Fatalf("beginning sql transaction: %v", err)
+		}
+		if err := ledgerbucket.InsertBucket(tx, b); err != nil {
+			log.Fatalf("inserting single bucket")
+		}
+		if err := tx.Commit(); err != nil {
+			log.Fatalf("committing sql transaction: %v", err)
+		}
 	} else if *insertMode {
 		// insert a transaction to the db
 		d, err := ledger.ParseDate(*entrydate)
@@ -137,61 +154,31 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
-	} else if *summaryMode && *through != "" && *assets {
-		// summarize all assets through a given date
-		td, err := ledger.ParseDate(*through)
-		if err != nil {
-			log.Print(err)
-			return
-		}
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning sql transaction: %v", err)
-		}
-		sum, err := ledger.SumAssets(tx, td)
-		if err != nil {
-			log.Fatalf("summing assets: %v", err)
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing sql transaction: %v", err)
-		}
-		log.Printf("All assets as of %v: %d", *through, sum)
-	} else if *summaryMode && *through != "" {
-		// summarize all buckets through a given date
-		td, err := ledger.ParseDate(*through)
-		if err != nil {
-			log.Print(err)
-			return
-		}
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning sql transaction: %v", err)
-		}
-		result, err := ledger.SummarizeLedger(tx, td)
-		if err != nil {
-			log.Fatalf("summarizing buckets: %v", err)
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing sql transaction: %v", err)
-		}
-		for b, v := range result {
-			log.Printf("%s: %d", b, v)
-		}
 	} else if *summaryMode {
-		// output summary of all buckets through today
+		// summarize all buckets through a given date
+		td := time.Now()
+
+		if *through != "" {
+			td, err = ledger.ParseDate(*through)
+			if err != nil {
+				log.Print(err)
+				return
+			}
+		}
+
 		tx, err := db.Begin()
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		result, err := ledger.SummarizeLedger(tx, time.Now())
+		balanceList, err := ledger.SummarizeLedger(tx, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
-		for b, v := range result {
-			log.Printf("%s: %d", b, v)
+		for _, b := range balanceList {
+			log.Printf("%v", b)
 		}
 	}
 }

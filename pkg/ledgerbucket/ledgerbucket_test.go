@@ -12,7 +12,7 @@ func TestInsertBucket(t *testing.T) {
 	db := testdb(t)
 	b := Bucket{
 		Name:      "Checking",
-		Asset:     true,
+		Asset:     1,
 		Liquidity: "Full",
 	}
 

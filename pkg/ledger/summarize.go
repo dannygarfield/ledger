@@ -6,29 +6,40 @@ import (
 	"time"
 )
 
+type balanceDetail struct {
+	bucket    string
+	amount    int
+	asset     int
+	liquidity string
+}
+
 // get net amounts of all buckets through a given date
-func SummarizeLedger(tx *sql.Tx, through time.Time) (map[string]int, error) {
-	q := `SELECT account, sum(amount) FROM (
-		SELECT amount, happened_at, destination AS account FROM entries
-		UNION ALL
-		SELECT -amount, happened_at, source AS account FROM entries
-		)
-		WHERE date(happened_at) <= date($1)
-		GROUP BY account
-		ORDER BY sum(amount) DESC;`
+func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
+	fmt.Printf("THROUGHL %v\n", through)
+	q := `SELECT account, sum(amount), asset, liquidity
+	    FROM (
+	        SELECT amount, happened_at, destination AS account FROM entries
+	        UNION ALL
+	        SELECT -amount, happened_at, source AS account FROM entries
+	    ) l
+	    LEFT JOIN buckets b
+	    ON l.account = b.name
+	    WHERE date(l.happened_at) <= date($1)
+	    GROUP BY account
+	    ORDER BY sum(amount) DESC;`
 	rows, err := tx.Query(q, through)
 	if err != nil {
 		return nil, fmt.Errorf("summarizeLedger() - querying rows: %w", err)
 	}
-	result := make(map[string]int)
+
+	var result []balanceDetail
+
 	for rows.Next() {
-		var account string
-		var total int
-		if err := rows.Scan(&account, &total); err != nil {
-			return nil, fmt.Errorf("summarizeLedger() - iterating through rows: %w", err)
+		b := balanceDetail{}
+		if err := rows.Scan(&b.bucket, &b.amount, &b.asset, &b.liquidity); err != nil {
+			return nil, fmt.Errorf("summarize.SummarizeLedger() scanning rows (%w)", err)
 		}
-		result[account] = total
-		// log.Printf("%s: %d \n", account, total)
+		result = append(result, b)
 	}
 	return result, nil
 }
@@ -50,25 +61,25 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 	return sum, nil
 }
 
-// get total assets owned on a given date
-func SumAssets(tx *sql.Tx, through time.Time) (int, error) {
-	q := `SELECT sum(amount) FROM (
-    	SELECT destination AS account, amount, happened_at
-		FROM entries
-        UNION ALL
-        SELECT source AS account, -amount, happened_at
-		FROM entries
-        ) t
-        LEFT JOIN buckets b
-        ON t.account = b.name
-        WHERE date(t.happened_at) < date($1) AND b.asset = 1;`
-	row := tx.QueryRow(q, through)
-	var sum int
-	if err := row.Scan(&sum); err != nil {
-		return -1, fmt.Errorf("sumAssets() - scanning rows: %w", err)
-	}
-	return sum, nil
-}
+// // get total assets owned on a given date
+// func SumAssets(tx *sql.Tx, through time.Time) (int, error) {
+// 	q := `SELECT sum(amount) FROM (
+//     	SELECT destination AS account, amount, happened_at
+// 		FROM entries
+//         UNION ALL
+//         SELECT source AS account, -amount, happened_at
+// 		FROM entries
+//         ) t
+//         LEFT JOIN buckets b
+//         ON t.account = b.name
+//         WHERE date(t.happened_at) < date($1) AND b.asset = 1;`
+// 	row := tx.QueryRow(q, through)
+// 	var sum int
+// 	if err := row.Scan(&sum); err != nil {
+// 		return -1, fmt.Errorf("sumAssets() - scanning rows: %w", err)
+// 	}
+// 	return sum, nil
+// }
 
 // find the first date after today that a bucket becomes <= 0
 func FindWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
