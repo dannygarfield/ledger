@@ -13,6 +13,11 @@ type balanceDetail struct {
 	liquidity string
 }
 
+type dailyBalanceDetail struct {
+	day      time.Time
+	balances []balanceDetail
+}
+
 // get net amounts of all buckets through a given date
 func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
 	fmt.Printf("BALANCES THROUGH: %v\n", through)
@@ -59,39 +64,4 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
 	}
 	return sum, nil
-}
-
-// // get total assets owned on a given date
-// func SumAssets(tx *sql.Tx, through time.Time) (int, error) {
-// 	q := `SELECT sum(amount) FROM (
-//     	SELECT destination AS account, amount, happened_at
-// 		FROM entries
-//         UNION ALL
-//         SELECT source AS account, -amount, happened_at
-// 		FROM entries
-//         ) t
-//         LEFT JOIN buckets b
-//         ON t.account = b.name
-//         WHERE date(t.happened_at) < date($1) AND b.asset = 1;`
-// 	row := tx.QueryRow(q, through)
-// 	var sum int
-// 	if err := row.Scan(&sum); err != nil {
-// 		return -1, fmt.Errorf("sumAssets() - scanning rows: %w", err)
-// 	}
-// 	return sum, nil
-// }
-
-// find the first date after today that a bucket becomes <= 0
-func FindWhenZero(tx *sql.Tx, bucket string) (time.Time, error) {
-	today := ConvertToDate(time.Now())
-	for t := today; t.Before(today.AddDate(2, 0, 0)); t = t.AddDate(0, 0, 1) {
-		balance, err := SummarizeBucket(tx, bucket, t)
-		if err != nil {
-			return time.Now(), fmt.Errorf("findWhenZero() - summarizing bucket: %w", err)
-		}
-		if balance <= 0 {
-			return t, nil
-		}
-	}
-	return time.Now(), nil
 }
