@@ -26,6 +26,7 @@ func InsertBucket(tx *sql.Tx, bucket Bucket) error {
 	return nil
 }
 
+// show all buckets in the db
 func ShowBuckets(tx *sql.Tx) ([]Bucket, error) {
 	q := `SELECT name, asset, liquidity FROM buckets`
 	rows, err := tx.Query(q)

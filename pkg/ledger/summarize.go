@@ -15,8 +15,8 @@ type balanceDetail struct {
 
 // get net amounts of all buckets through a given date
 func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
-	fmt.Printf("THROUGHL %v\n", through)
-	q := `SELECT account, sum(amount), asset, liquidity
+	fmt.Printf("BALANCES THROUGH: %v\n", through)
+	q := `SELECT account, sum(amount), b.asset, b.liquidity
 	    FROM (
 	        SELECT amount, happened_at, destination AS account FROM entries
 	        UNION ALL
@@ -26,7 +26,7 @@ func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
 	    ON l.account = b.name
 	    WHERE date(l.happened_at) <= date($1)
 	    GROUP BY account
-	    ORDER BY sum(amount) DESC;`
+	    ORDER BY b.liquidity DESC, sum(amount) DESC;`
 	rows, err := tx.Query(q, through)
 	if err != nil {
 		return nil, fmt.Errorf("summarizeLedger() - querying rows: %w", err)

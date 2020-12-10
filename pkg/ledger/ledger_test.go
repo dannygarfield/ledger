@@ -15,7 +15,7 @@ func TestInsertEntry(t *testing.T) {
 	e := Entry{
 		Source:      "checking",
 		Destination: "credit card",
-		EntryDate:  time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
+		EntryDate:   time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local),
 		Amount:      120,
 	}
 
@@ -49,13 +49,13 @@ func TestInsertRepeatingEntry(t *testing.T) {
 		Source:      "checking",
 		Destination: "IRA",
 		Amount:      50,
-		EntryDate:  time.Now(), // repeating write until 2 years from now. setting EntryDate to time.Now() requires less math
+		EntryDate:   time.Now(), // repeating write until 2 years from now. setting EntryDate to time.Now() requires less math
 	}
 	e2 := Entry{
 		Source:      "checking",
 		Destination: "rent",
 		Amount:      50,
-		EntryDate:  time.Now(),
+		EntryDate:   time.Now(),
 	}
 
 	// When
@@ -98,20 +98,20 @@ func TestSummarizeLedger(t *testing.T) {
 		{
 			Source:      "savings",
 			Destination: "checking",
-			EntryDate:  earlyDate,
-			Amount:      500,
-		},
-		{
-			Source:      "checking",
-			Destination: "credit card",
-			EntryDate:  earlyDate,
+			EntryDate:   earlyDate,
 			Amount:      1000,
 		},
 		{
 			Source:      "checking",
 			Destination: "credit card",
-			EntryDate:  laterDate,
-			Amount:      20,
+			EntryDate:   earlyDate,
+			Amount:      200,
+		},
+		{
+			Source:      "checking",
+			Destination: "credit card",
+			EntryDate:   laterDate,
+			Amount:      100,
 		},
 	}
 	buckets := []ledgerbucket.Bucket{
@@ -152,29 +152,24 @@ func TestSummarizeLedger(t *testing.T) {
 	result, err := SummarizeLedger(tx, earlyDate)
 	assertNoError(t, err, "summarizing all buckets through date")
 	testcommit(t, tx)
-	want := []struct {
-		bucket    string
-		amount    int
-		asset     int
-		liquidity string
-	}{
+	want := []balanceDetail{
 		{
-			bucket:    "credit card",
-			amount:    1020,
-			asset:     0,
-			liquidity: "",
+			bucket:    "checking",
+			amount:    1000 - 200,
+			asset:     1,
+			liquidity: "full",
 		},
 		{
 			bucket:    "savings",
-			amount:    -500,
+			amount:    -1000,
 			asset:     1,
 			liquidity: "full",
 		},
 		{
-			bucket:    "checking",
-			amount:    -520,
-			asset:     1,
-			liquidity: "full",
+			bucket:    "credit card",
+			amount:    200,
+			asset:     0,
+			liquidity: "",
 		},
 	}
 
