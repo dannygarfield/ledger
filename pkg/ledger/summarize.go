@@ -51,7 +51,7 @@ func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
 
 // get net amount of a single bucket through a given date
 func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
-	q := `SELECT sum(amount) FROM (
+	q := `SELECT COALESCE(sum(amount), 0) FROM (
 		SELECT amount, happened_at FROM entries WHERE destination = $1
 		UNION ALL
 		SELECT -amount, happened_at from entries where source = $1
@@ -64,4 +64,20 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
 	}
 	return sum, nil
+}
+
+func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
+	out := []map[string]int{}
+	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
+		m := map[string]int{}
+		out = append(out, m)
+		for _, bucket := range buckets {
+			val, err := SummarizeBucket(tx, bucket, d)
+			if err != nil {
+				return nil, err
+			}
+			m[bucket] = val
+		}
+	}
+	return out, nil
 }
