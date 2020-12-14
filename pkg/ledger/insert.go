@@ -12,7 +12,7 @@ import (
 type Entry struct {
 	Source      string
 	Destination string
-	EntryDate  time.Time
+	EntryDate   time.Time
 	Amount      int
 }
 

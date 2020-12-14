@@ -63,7 +63,7 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		e := ledger.Entry{
 			Source:      record[0],
 			Destination: record[1],
-			EntryDate:  EntryDate,
+			EntryDate:   EntryDate,
 			Amount:      amount,
 		}
 		entries = append(entries, e)
