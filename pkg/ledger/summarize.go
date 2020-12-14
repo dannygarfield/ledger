@@ -51,15 +51,11 @@ func SummarizeLedger(tx *sql.Tx, buckets []string, through time.Time) (map[strin
 func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
 	out := []map[string]int{}
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
-		m := map[string]int{}
-		out = append(out, m)
-		for _, bucket := range buckets {
-			val, err := SummarizeBucket(tx, bucket, d)
-			if err != nil {
-				return nil, err
-			}
-			m[bucket] = val
+		l, err := SummarizeLedger(tx, buckets, d)
+		if err != nil {
+			return nil, fmt.Errorf("ledger.MakePlot() summarizing ledger (%w)", err)
 		}
+		out = append(out, l)
 	}
 	return out, nil
 }
