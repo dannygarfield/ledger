@@ -12,12 +12,13 @@ import (
 
 func TestSummarizeLedger(t *testing.T) {
 	db := testutils.Db(t)
-	t.Run("simplest case",
+	t.Run("three buckets, one entry",
 		func(t *testing.T) {
 			// GIVEN
 			entryDate := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
 			sourceBucket := "savings"
 			destBucket := "checking"
+			emptyBucket := "401k"
 
 			inputEntry := ledger.Entry{sourceBucket, destBucket, entryDate, 100}
 			inputBuckets := []ledgerbucket.Bucket{
@@ -43,14 +44,14 @@ func TestSummarizeLedger(t *testing.T) {
 				return nil
 			})
 
-			want := map[string]int{"savings": -100, "checking": 100}
+			want := map[string]int{"savings": -100, "checking": 100, "401k": 0}
 
 			// When
 			var got map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = ledger.SummarizeLedger(
 					tx,
-					[]string{sourceBucket, destBucket},
+					[]string{sourceBucket, destBucket, emptyBucket},
 					entryDate.AddDate(0, 0, 1),
 				)
 				return err
