@@ -19,32 +19,32 @@ type dailyBalanceDetail struct {
 }
 
 // get net amounts of all buckets through a given date
-func SummarizeLedger(tx *sql.Tx, through time.Time) ([]balanceDetail, error) {
+func SummarizeLedger(tx *sql.Tx, through time.Time) (map[string]int, error) {
 	fmt.Printf("BALANCES THROUGH: %v\n", through)
-	q := `SELECT account, sum(amount), b.asset, b.liquidity
-	    FROM (
+	q := `SELECT buckets.name, COALESCE(sum(ledger.amount),0)
+	    FROM buckets
+	    LEFT JOIN (
 	        SELECT amount, happened_at, destination AS account FROM entries
 	        UNION ALL
 	        SELECT -amount, happened_at, source AS account FROM entries
-	    ) l
-	    LEFT JOIN buckets b
-	    ON l.account = b.name
-	    WHERE date(l.happened_at) <= date($1)
-	    GROUP BY account
-	    ORDER BY b.liquidity DESC, sum(amount) DESC;`
+	    ) ledger
+	    ON buckets.name = ledger.account
+	    WHERE ledger.happened_at < date($1) OR ledger.happened_at IS NULL
+	    GROUP BY buckets.name;`
 	rows, err := tx.Query(q, through)
 	if err != nil {
 		return nil, fmt.Errorf("summarizeLedger() - querying rows: %w", err)
 	}
 
-	var result []balanceDetail
+	result := map[string]int{}
 
 	for rows.Next() {
-		b := balanceDetail{}
-		if err := rows.Scan(&b.bucket, &b.amount, &b.asset, &b.liquidity); err != nil {
-			return nil, fmt.Errorf("summarize.SummarizeLedger() scanning rows (%w)", err)
+		var b string
+		var v int
+		if err := rows.Scan(&b, &v); err != nil {
+			return nil, fmt.Errorf("ledger.SummarizeLedger() scanning rows (%w)", err)
 		}
-		result = append(result, b)
+		result[b] = v
 	}
 	return result, nil
 }

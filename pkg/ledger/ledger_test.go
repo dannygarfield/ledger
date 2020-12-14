@@ -3,7 +3,6 @@ package ledger
 import (
 	"database/sql"
 	"io/ioutil"
-	"ledger/pkg/ledgerbucket"
 	"reflect"
 	"testing"
 	"time"
@@ -87,94 +86,6 @@ func TestInsertRepeatingEntry(t *testing.T) {
 		assertEqual(t, e2.Amount*25, result, "inserting monthly")
 	}
 
-}
-
-func TestSummarizeLedger(t *testing.T) {
-	// Given
-	db := testdb(t)
-	earlyDate := time.Date(2020, 12, 1, 0, 0, 0, 0, time.Local)
-	laterDate := time.Date(2021, 4, 1, 0, 0, 0, 0, time.Local)
-	entries := []Entry{
-		{
-			Source:      "savings",
-			Destination: "checking",
-			EntryDate:   earlyDate,
-			Amount:      1000,
-		},
-		{
-			Source:      "checking",
-			Destination: "credit card",
-			EntryDate:   earlyDate,
-			Amount:      200,
-		},
-		{
-			Source:      "checking",
-			Destination: "credit card",
-			EntryDate:   laterDate,
-			Amount:      100,
-		},
-	}
-	buckets := []ledgerbucket.Bucket{
-		{
-			Name:      "savings",
-			Asset:     1,
-			Liquidity: "full",
-		},
-		{
-			Name:      "checking",
-			Asset:     1,
-			Liquidity: "full",
-		},
-		{
-			Name:      "credit card",
-			Asset:     0,
-			Liquidity: "",
-		},
-		{
-			Name:      "paycheck",
-			Asset:     0,
-			Liquidity: "",
-		},
-	}
-	tx := testtx(t, db)
-	for _, e := range entries {
-		err := InsertEntry(tx, e)
-		assertNoError(t, err, "inserting entries")
-	}
-	for _, b := range buckets {
-		err := ledgerbucket.InsertBucket(tx, b)
-		assertNoError(t, err, "classifying buckets")
-	}
-	testcommit(t, tx)
-
-	// When
-	tx = testtx(t, db)
-	result, err := SummarizeLedger(tx, earlyDate)
-	assertNoError(t, err, "summarizing all buckets through date")
-	testcommit(t, tx)
-	want := []balanceDetail{
-		{
-			bucket:    "checking",
-			amount:    1000 - 200,
-			asset:     1,
-			liquidity: "full",
-		},
-		{
-			bucket:    "savings",
-			amount:    -1000,
-			asset:     1,
-			liquidity: "full",
-		},
-		{
-			bucket:    "credit card",
-			amount:    200,
-			asset:     0,
-			liquidity: "",
-		},
-	}
-
-	// Then
-	assertEqual(t, want, result, "")
 }
 
 // helper functions
