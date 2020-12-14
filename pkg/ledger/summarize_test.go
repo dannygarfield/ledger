@@ -14,28 +14,49 @@ func TestSummarizeLedger(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("simplest case",
 		func(t *testing.T) {
-			// Given
-			throughdate := time.Now()
-			input := ledgerbucket.Bucket{"checking", 1, "full"}
+			// GIVEN
+			entryDate := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+			sourceBucket := "savings"
+			destBucket := "checking"
 
+			inputEntry := ledger.Entry{sourceBucket, destBucket, entryDate, 100}
+			inputBuckets := []ledgerbucket.Bucket{
+				{"checking", 1, "full"},
+				{"savings", 1, "full"},
+			}
+
+			// insert entry
 			testutils.Tx(t, db, func(tx *sql.Tx) error {
-				if err := ledgerbucket.InsertBucket(tx, input); err != nil {
+				if err := ledger.InsertEntry(tx, inputEntry); err != nil {
 					return err
 				}
 				return nil
 			})
 
-			want := map[string]int{"checking": 0}
+			// insert buckets
+			testutils.Tx(t, db, func(tx *sql.Tx) error {
+				for _, i := range inputBuckets {
+					if err := ledgerbucket.InsertBucket(tx, i); err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+
+			want := map[string]int{"savings": -100, "checking": 100}
 
 			// When
 			var got map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = ledger.SummarizeLedger(
 					tx,
-					throughdate,
+					[]string{sourceBucket, destBucket},
+					entryDate.AddDate(0, 0, 1),
 				)
 				return err
 			})
+
+			// Then
 			assertEqual(t, want, got)
 		})
 }
@@ -46,7 +67,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 		bucket1 := "our source bucket"
 		bucket2 := "our destination bucket"
 		bucket3 := "our bucket with zero entries"
-		start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.UTC)
+		start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
 
 		input := []ledger.Entry{
 			{bucket1, bucket2, start, 100},

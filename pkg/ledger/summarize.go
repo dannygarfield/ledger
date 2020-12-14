@@ -18,37 +18,6 @@ type dailyBalanceDetail struct {
 	balances []balanceDetail
 }
 
-// get net amounts of all buckets through a given date
-func SummarizeLedger(tx *sql.Tx, through time.Time) (map[string]int, error) {
-	fmt.Printf("BALANCES THROUGH: %v\n", through)
-	q := `SELECT buckets.name, COALESCE(sum(ledger.amount),0)
-	    FROM buckets
-	    LEFT JOIN (
-	        SELECT amount, happened_at, destination AS account FROM entries
-	        UNION ALL
-	        SELECT -amount, happened_at, source AS account FROM entries
-	    ) ledger
-	    ON buckets.name = ledger.account
-	    WHERE ledger.happened_at < date($1) OR ledger.happened_at IS NULL
-	    GROUP BY buckets.name;`
-	rows, err := tx.Query(q, through)
-	if err != nil {
-		return nil, fmt.Errorf("summarizeLedger() - querying rows: %w", err)
-	}
-
-	result := map[string]int{}
-
-	for rows.Next() {
-		var b string
-		var v int
-		if err := rows.Scan(&b, &v); err != nil {
-			return nil, fmt.Errorf("ledger.SummarizeLedger() scanning rows (%w)", err)
-		}
-		result[b] = v
-	}
-	return result, nil
-}
-
 // get net amount of a single bucket through a given date
 func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0) FROM (
@@ -64,6 +33,19 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
 	}
 	return sum, nil
+}
+
+// get net amounts of all buckets through a given date
+func SummarizeLedger(tx *sql.Tx, buckets []string, through time.Time) (map[string]int, error) {
+	out := map[string]int{}
+	for _, b := range buckets {
+		val, err := SummarizeBucket(tx, b, through)
+		if err != nil {
+			return nil, err
+		}
+		out[b] = val
+	}
+	return out, nil
 }
 
 func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {

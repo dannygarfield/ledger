@@ -170,7 +170,8 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-		balanceList, err := ledger.SummarizeLedger(tx, td)
+		// this will return nothing. second arg should take in all bucket names in buckets table
+		balanceList, err := ledger.SummarizeLedger(tx, []string{}, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
