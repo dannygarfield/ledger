@@ -24,11 +24,11 @@ func TestInsertBucket(t *testing.T) {
 
 	// Then
 	tx = testtx(t, db)
-	result, err := ShowBuckets(tx)
+	got, err := GetBuckets(tx)
 	assertNoError(t, err, "")
 	testcommit(t, tx)
-	bs := []Bucket{b}
-	assertEqual(t, bs, result, "")
+	want := []string{b.Name}
+	assertEqual(t, want, got, "")
 }
 
 // helper functions
