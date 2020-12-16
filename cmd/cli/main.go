@@ -170,16 +170,22 @@ func main() {
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
+
+		bucketList, err := ledgerbucket.GetBuckets(tx)
+		if err != nil {
+			log.Fatalf("summarizing buckets: %v", err)
+		}
+
 		// this will return nothing. second arg should take in all bucket names in buckets table
-		balanceList, err := ledger.SummarizeLedger(tx, []string{}, td)
+		ledgerMap, err := ledger.SummarizeLedger(tx, bucketList, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
-		for _, b := range balanceList {
-			log.Printf("%v", b)
+		for k, v := range ledgerMap {
+			log.Printf("%s: %v", k, v)
 		}
 	}
 }

@@ -27,19 +27,19 @@ func InsertBucket(tx *sql.Tx, bucket Bucket) error {
 }
 
 // show all buckets in the db
-func ShowBuckets(tx *sql.Tx) ([]Bucket, error) {
-	q := `SELECT name, asset, liquidity FROM buckets`
+func GetBuckets(tx *sql.Tx) ([]string, error) {
+	q := `SELECT name FROM buckets`
 	rows, err := tx.Query(q)
 	if err != nil {
 		return nil, fmt.Errorf("querying db (%w)", err)
 	}
-	var buckets []Bucket
+	var bucketNames []string
 	for rows.Next() {
-		b := Bucket{}
-		if err := rows.Scan(&b.Name, &b.Asset, &b.Liquidity); err != nil {
+		var b string
+		if err := rows.Scan(&b); err != nil {
 			return nil, fmt.Errorf("scanning rows (%w)", err)
 		}
-		buckets = append(buckets, b)
+		bucketNames = append(bucketNames, b)
 	}
-	return buckets, nil
+	return bucketNames, nil
 }
