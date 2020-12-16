@@ -6,18 +6,6 @@ import (
 	"time"
 )
 
-type balanceDetail struct {
-	bucket    string
-	amount    int
-	asset     int
-	liquidity string
-}
-
-type dailyBalanceDetail struct {
-	day      time.Time
-	balances []balanceDetail
-}
-
 // get net amount of a single bucket through a given date
 func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0) FROM (
