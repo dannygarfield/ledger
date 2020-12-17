@@ -6,6 +6,7 @@ import (
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
 	"ledger/pkg/ledgerbucket"
+	"ledger/pkg/mytemplate"
 	"log"
 	"time"
 )
@@ -157,7 +158,6 @@ func main() {
 	} else if *summaryMode {
 		// summarize all buckets through a given date
 		td := time.Now()
-
 		if *through != "" {
 			td, err = ledger.ParseDate(*through)
 			if err != nil {
@@ -165,18 +165,17 @@ func main() {
 				return
 			}
 		}
-
+		// begin sql transaction
 		tx, err := db.Begin()
 		if err != nil {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
-
+		// get list of bucket names
 		bucketList, err := ledgerbucket.GetBuckets(tx)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
-
-		// this will return nothing. second arg should take in all bucket names in buckets table
+		// get ledger summary
 		ledgerMap, err := ledger.SummarizeLedger(tx, bucketList, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
@@ -184,8 +183,14 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
-		for k, v := range ledgerMap {
-			log.Printf("%s: %v", k, v)
+		for b, v := range ledgerMap {
+			log.Printf("%s: %v", b, v)
+			// err := mytemplate.Readout(b, td, v)
+			err := mytemplate.RenderDayLedger(td, ledgerMap)
+			if err != nil {
+				log.Fatalf("calling template.Readout (%v)", err)
+			}
+
 		}
 	}
 }

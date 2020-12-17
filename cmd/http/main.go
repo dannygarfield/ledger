@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"ledger/pkg/mytemplate"
 )
 
 func main() {
@@ -14,6 +15,8 @@ func main() {
 	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %v", r.URL)
 	})
+	// http.HandleFunc("/insert", mytemplate.insertHandler)
+	http.HandleFunc("/ledger", mytemplate.LedgerHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
