@@ -17,6 +17,8 @@ func main() {
 	})
 	// http.HandleFunc("/insert", mytemplate.insertHandler)
 	http.HandleFunc("/ledger", mytemplate.LedgerHandler)
+	http.HandleFunc("/insert", mytemplate.InsertHandler)
+	http.HandleFunc("/save", mytemplate.SaveHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

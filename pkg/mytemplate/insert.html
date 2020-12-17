@@ -1,0 +1,26 @@
+<!doctype html>
+{{ block "content" . }}
+<html lang="en">
+    <head>
+        <title>insert</title>
+    </head>
+    <body>
+        <h1>Insert an entry</h1>
+        <form action="/save" method="POST">
+          <label for="source">source:</label><br>
+          <input type="text" id="source" name="source" value=""><br>
+
+          <label for="destination">destination:</label><br>
+          <input type="text" id="destination" name="destination" value=""><br>
+
+          <label for="happened_at">happened_at:</label><br>
+          <input type="text" id="happened_at" name="happened_at" value=""><br>
+
+          <label for="amount">amount:</label><br>
+          <input type="text" id="amount" name="amount" value=""><br>
+
+          <input type="submit" value="Submit">
+        </form>
+    </body>
+</html>
+{{ end }}
