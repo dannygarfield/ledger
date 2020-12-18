@@ -27,6 +27,26 @@ func LedgerHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, data)
 }
 
+func DailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("pkg/mytemplate/dailyledger.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	data := map[string][]int{
+		"checking": []int{-100, -200, -300},
+		"savings": []int{100, 200, 300},
+		"401k": []int{0, 0, 0},
+	}
+	// data := []map[string]int{
+	// 	{bucket1: -100, bucket2: 100, bucket3: 0},
+	// 	{bucket1: -200, bucket2: 200, bucket3: 0},
+	// 	{bucket1: -300, bucket2: 300, bucket3: 0},
+	// }
+
+	t.Execute(w, data)
+}
+
 func InsertHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/insert.html")
 	if err != nil {
@@ -39,6 +59,14 @@ func InsertHandler(w http.ResponseWriter, r *http.Request) {
 func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	formdata := r.Form
+
+	// convert date to time.Time
+	// convert amount to int
+	// open db
+	// start sql Tx
+	// insert entry
+	// commit
+
 	for k, v := range formdata {
 		fmt.Printf("%s: %s\n", k, v)
 	}

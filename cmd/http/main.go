@@ -17,6 +17,7 @@ func main() {
 	})
 	// http.HandleFunc("/insert", mytemplate.insertHandler)
 	http.HandleFunc("/ledger", mytemplate.LedgerHandler)
+	http.HandleFunc("/dailyledger", mytemplate.DailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.InsertHandler)
 	http.HandleFunc("/save", mytemplate.SaveHandler)
 

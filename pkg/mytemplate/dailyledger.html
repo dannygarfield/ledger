@@ -1,0 +1,24 @@
+<!doctype html>
+{{ block "content" . }}
+<html lang="en">
+    <head>
+        <title>ledger</title>
+    </head>
+    <body>
+        <h1>Daily Ledger</h1>
+        <table>
+            <tr>
+                <th></th>
+            </tr>
+            {{ range $b, $v := . }}
+            <tr>
+                <td>{{ $b }}</td>
+                {{ range $v }}
+                <td>{{ . }}</td>
+                {{ end }}
+            </tr>
+            {{ end }}
+        </table>
+    </body>
+</html>
+{{ end }}
