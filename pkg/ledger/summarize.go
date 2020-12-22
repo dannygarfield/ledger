@@ -6,6 +6,29 @@ import (
 	"time"
 )
 
+func GetLedger(tx *sql.Tx) ([]Entry, error) {
+	q := `SELECT * FROM entries ORDER BY happened_at;`
+
+	rows, err := tx.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ledger []Entry
+	for rows.Next() {
+		e := Entry{}
+		var datestring string
+		if err := rows.Scan(&e.Source, &e.Destination, &datestring, &e.Amount); err != nil {
+			return nil, err
+		}
+		if e.EntryDate, err = time.Parse("2006-01-02 15:04:05-07:00", datestring); err != nil {
+			return nil, err
+		}
+		ledger = append(ledger, e)
+	}
+	return ledger, nil
+}
+
 // get net amount of a single bucket through a given date
 func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0) FROM (
@@ -70,6 +93,5 @@ func GetBuckets(tx *sql.Tx) ([]string, error) {
 		buckets = append(buckets, b)
 	}
 	return buckets, nil
-
 
 }

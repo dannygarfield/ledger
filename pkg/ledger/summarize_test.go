@@ -9,34 +9,57 @@ import (
 	"time"
 )
 
+func TestGetLedger(t *testing.T) {
+	db := testutils.Db(t)
+	t.Run("one entry",
+		func(t *testing.T) {
+			input := ledger.Entry{
+				"savings",
+				"checking",
+				time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local),
+				100,
+			}
+
+			testutils.Tx(t, db, func(tx *sql.Tx) error {
+				err := ledger.InsertEntry(tx, input)
+				return err
+			})
+
+			want := []ledger.Entry{input}
+			var got []ledger.Entry
+			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+				got, err = ledger.GetLedger(tx)
+				return err
+			})
+			assertEqual(t, want, got)
+		})
+}
+
 func TestSummarizeLedger(t *testing.T) {
 	db := testutils.Db(t)
-	t.Run("three buckets, one entry",
+	t.Run("one entry",
 		func(t *testing.T) {
 			// GIVEN
 			entryDate := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
 			sourceBucket := "savings"
 			destBucket := "checking"
-			emptyBucket := "401k"
 
 			inputEntry := ledger.Entry{sourceBucket, destBucket, entryDate, 100}
 
 			// insert entry
 			testutils.Tx(t, db, func(tx *sql.Tx) error {
-				if err := ledger.InsertEntry(tx, inputEntry); err != nil {
-					return err
-				}
-				return nil
+				err := ledger.InsertEntry(tx, inputEntry)
+				return err
 			})
 
-			want := map[string]int{"savings": -100, "checking": 100, "401k": 0}
+			want := map[string]int{"savings": -100, "checking": 100}
 
 			// When
 			var got map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = ledger.SummarizeLedger(
 					tx,
-					[]string{sourceBucket, destBucket, emptyBucket},
+					[]string{sourceBucket, destBucket},
 					entryDate.AddDate(0, 0, 1),
 				)
 				return err
@@ -100,10 +123,8 @@ func TestGetBuckets(t *testing.T) {
 		}
 
 		testutils.Tx(t, db, func(tx *sql.Tx) error {
-			if err := ledger.InsertEntry(tx, input); err != nil {
-				return err
-			}
-			return nil
+			err := ledger.InsertEntry(tx, input)
+			return err
 		})
 
 		want := []string{"checking", "savings"}
