@@ -5,8 +5,6 @@ import (
 	"flag"
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
-	"ledger/pkg/ledgerbucket"
-	"ledger/pkg/mytemplate"
 	"log"
 	"time"
 )
@@ -20,11 +18,7 @@ func main() {
 
 	csvMode := flag.Bool("csv", false, "inert a transaction using a csv")
 	filepath := flag.String("filepath", "", "path to csv file to read")
-	object := flag.String("object", "entry", "object to work on: 'entry' or 'bucket'")
 	repeat := flag.String("repeat", "", "how often an entry repeats: 'weekly' or 'monthly'")
-
-	asset := flag.Int("asset", 0, "denotes if a bucket is considered an asset (in your posession)")
-	liquidity := flag.String("liquidity", "", "liquidity of a bucket: 'low', 'medium', 'full', or the empty string")
 
 	through := flag.String("through", "", "date through which to summarize")
 
@@ -51,27 +45,6 @@ func main() {
 		// instruct user to pick a mode
 		log.Printf("specify one of -insert or -summary or --zero")
 		return
-	} else if *insertMode && *csvMode && *object == "bucket" {
-		// insert buckets from a csv
-		buckets, err := csvreader.CsvToBuckets(*filepath)
-		if err != nil {
-			log.Fatalf("Reading csv")
-		}
-		// begin the sql transaction
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning sql transaction: %v", err)
-		}
-		// insert all entries
-		for _, b := range buckets {
-			if err := ledgerbucket.InsertBucket(tx, b); err != nil {
-				log.Fatalf("inserting single bucket")
-			}
-		}
-		// commit the sql transaction
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing sql transaction: %v", err)
-		}
 	} else if *insertMode && *csvMode {
 		// insert entries from a csv
 		entries, err := csvreader.CsvToEntries(*filepath)
@@ -116,22 +89,6 @@ func main() {
 		if err := tx.Commit(); err != nil {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
-	} else if *insertMode && *object == "bucket" {
-		b := ledgerbucket.Bucket{
-			Name:      *source,
-			Asset:     *asset,
-			Liquidity: *liquidity,
-		}
-		tx, err := db.Begin()
-		if err != nil {
-			log.Fatalf("beginning sql transaction: %v", err)
-		}
-		if err := ledgerbucket.InsertBucket(tx, b); err != nil {
-			log.Fatalf("inserting single bucket")
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatalf("committing sql transaction: %v", err)
-		}
 	} else if *insertMode {
 		// insert a transaction to the db
 		d, err := ledger.ParseDate(*entrydate)
@@ -171,7 +128,7 @@ func main() {
 			log.Fatalf("beginning sql transaction: %v", err)
 		}
 		// get list of bucket names
-		bucketList, err := ledgerbucket.GetBuckets(tx)
+		bucketList, err := ledger.GetBuckets(tx)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
@@ -186,10 +143,10 @@ func main() {
 		for b, v := range ledgerMap {
 			log.Printf("%s: %v", b, v)
 			// err := mytemplate.Readout(b, td, v)
-			err := mytemplate.RenderDayLedger(td, ledgerMap)
-			if err != nil {
-				log.Fatalf("calling template.Readout (%v)", err)
-			}
+			// err := mytemplate.RenderDayLedger(td, ledgerMap)
+			// if err != nil {
+			// 	log.Fatalf("calling template.Readout (%v)", err)
+			// }
 
 		}
 	}

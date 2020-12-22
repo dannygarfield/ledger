@@ -47,3 +47,29 @@ func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]
 	}
 	return out, nil
 }
+
+func GetBuckets(tx *sql.Tx) ([]string, error) {
+	q := `SELECT DISTINCT buckets FROM (
+	    SELECT source AS buckets FROM entries
+	    UNION
+	    SELECT destination AS buckets FROM entries
+	    ORDER BY buckets
+	);`
+
+	rows, err := tx.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	buckets := []string{}
+	for rows.Next() {
+		var b string
+		if err := rows.Scan(&b); err != nil {
+			return nil, err
+		}
+		buckets = append(buckets, b)
+	}
+	return buckets, nil
+
+
+}

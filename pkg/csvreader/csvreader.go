@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"ledger/pkg/ledger"
-	"ledger/pkg/ledgerbucket"
 	"log"
 	"os"
 	"strconv"
@@ -69,53 +68,4 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 		entries = append(entries, e)
 	}
 	return entries, nil
-}
-
-// convert a CSV to a slice of buckets
-func CsvToBuckets(filepath string) ([]ledgerbucket.Bucket, error) {
-	// create the reader
-	reader, err := csvReader(filepath)
-	if err != nil {
-		return nil, fmt.Errorf("creating the reader: %w", err)
-	}
-	// read the header
-	header, err := reader.Read()
-	if err != nil {
-		return nil, fmt.Errorf("Reading the header row: %w", err)
-	}
-	// Validate order of columns
-	if header[0] != "name" || header[1] != "asset" || header[2] != "liquidity" {
-		log.Fatalln("Columns must be in order: source, destination, EntryDate, amount")
-	}
-	// construct slice of entries to return
-	var buckets []ledgerbucket.Bucket
-	// Read rows and construct and append Entry objects
-	for i := 0; ; i += 1 {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break // reached end of the file
-		} else if err != nil {
-			return nil, fmt.Errorf("Reading a row: %v", err)
-		}
-
-		// convert string to int
-		a, err := strconv.Atoi(record[1])
-		if err != nil {
-			return nil, fmt.Errorf("Converting string to int: %w", err)
-		}
-		// construct the bucket
-		b := ledgerbucket.Bucket{
-			Name:      record[0],
-			Asset:     a,
-			Liquidity: record[2],
-		}
-		buckets = append(buckets, b)
-	}
-	return buckets, nil
-}
-
-func printRow(row []string) {
-	for _, v := range row {
-		fmt.Println(v)
-	}
 }

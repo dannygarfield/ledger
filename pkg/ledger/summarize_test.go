@@ -3,7 +3,6 @@ package ledger_test
 import (
 	"database/sql"
 	"ledger/pkg/ledger"
-	"ledger/pkg/ledgerbucket"
 	"ledger/pkg/testutils"
 	"reflect"
 	"testing"
@@ -21,25 +20,11 @@ func TestSummarizeLedger(t *testing.T) {
 			emptyBucket := "401k"
 
 			inputEntry := ledger.Entry{sourceBucket, destBucket, entryDate, 100}
-			inputBuckets := []ledgerbucket.Bucket{
-				{"checking", 1, "full"},
-				{"savings", 1, "full"},
-			}
 
 			// insert entry
 			testutils.Tx(t, db, func(tx *sql.Tx) error {
 				if err := ledger.InsertEntry(tx, inputEntry); err != nil {
 					return err
-				}
-				return nil
-			})
-
-			// insert buckets
-			testutils.Tx(t, db, func(tx *sql.Tx) error {
-				for _, i := range inputBuckets {
-					if err := ledgerbucket.InsertBucket(tx, i); err != nil {
-						return err
-					}
 				}
 				return nil
 			})
@@ -98,6 +83,34 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 				start,
 				start.AddDate(0, 0, 3),
 			)
+			return err
+		})
+		assertEqual(t, want, got)
+	})
+}
+
+func TestGetBuckets(t *testing.T) {
+	db := testutils.Db(t)
+	t.Run("one transaction, two buckets", func(t *testing.T) {
+		input := ledger.Entry{
+			"savings",
+			"checking",
+			time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local),
+			100,
+		}
+
+		testutils.Tx(t, db, func(tx *sql.Tx) error {
+			if err := ledger.InsertEntry(tx, input); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		want := []string{"checking", "savings"}
+		var got []string
+
+		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+			got, err = ledger.GetBuckets(tx)
 			return err
 		})
 		assertEqual(t, want, got)
