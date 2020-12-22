@@ -2,28 +2,26 @@ package mytemplate
 
 import (
 	"database/sql"
+	"fmt"
 	"html/template"
 	"ledger/pkg/ledger"
-	"ledger/pkg/ledgerbucket"
-	"log"
 	"net/http"
 	"time"
-	"fmt"
 )
 
 // define a struct to feed into a template
 type DayLedger struct {
-	Day         string
+	Day       string
 	LedgerMap map[string]int
 }
 
-func LedgerHandler(w http.ResponseWriter, r *http.Request) {
+func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data := prepareDayLedger()
+	data := prepareDayLedger(tx)
 	t.Execute(w, data)
 }
 
@@ -34,9 +32,9 @@ func DailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := map[string][]int{
-		"checking": []int{-100, -200, -300},
-		"savings": []int{100, 200, 300},
-		"401k": []int{0, 0, 0},
+		"checking": {-100, -200, -300},
+		"savings":  {100, 200, 300},
+		"401k":     {0, 0, 0},
 	}
 	// data := []map[string]int{
 	// 	{bucket1: -100, bucket2: 100, bucket3: 0},
@@ -73,26 +71,12 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/ledger", http.StatusFound)
 }
 
-func prepareDayLedger() DayLedger {
-	db, err := sql.Open("sqlite3", "./db.sqlite3")
-	if err != nil {
-		log.Fatalf("opening database: %v", err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		log.Fatalf("beginning sql transaction: %v", err)
-	}
+func prepareDayLedger(tx *sql.Tx) DayLedger {
 
 	today := time.Now().Format("01/02/2006")
 
-	allbuckets, _ := ledgerbucket.GetBuckets(tx)
+	allbuckets, _ := ledger.GetBuckets(tx)
 	l, _ := ledger.SummarizeLedger(tx, allbuckets, time.Now())
-
-	if err := tx.Commit(); err != nil {
-		log.Fatalf("committing sql transaction: %v", err)
-	}
 
 	return DayLedger{today, l}
 }
