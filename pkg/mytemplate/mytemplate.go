@@ -18,10 +18,15 @@ type DayLedger struct {
 func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := ledger.GetLedger(tx)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	data := prepareDayLedger(tx)
 	t.Execute(w, data)
 }
 
