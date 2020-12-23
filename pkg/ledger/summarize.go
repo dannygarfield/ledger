@@ -75,11 +75,11 @@ func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]
 
 func GetBuckets(tx *sql.Tx) ([]string, error) {
 	q := `SELECT DISTINCT buckets FROM (
-	    SELECT source AS buckets FROM entries
-	    UNION
-	    SELECT destination AS buckets FROM entries
-	    ORDER BY buckets
-	);`
+		    SELECT source AS buckets FROM entries
+		    UNION
+		    SELECT destination AS buckets FROM entries
+		) ORDER BY buckets
+	;`
 
 	rows, err := tx.Query(q)
 	if err != nil {
