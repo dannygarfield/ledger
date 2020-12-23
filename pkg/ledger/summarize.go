@@ -6,10 +6,12 @@ import (
 	"time"
 )
 
-func GetLedger(tx *sql.Tx) ([]Entry, error) {
-	q := `SELECT * FROM entries ORDER BY happened_at;`
+func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
+	q := `SELECT * FROM entries
+		WHERE date(happened_at) >= date($1) AND date(happened_at) < date($2)
+		ORDER BY happened_at;`
 
-	rows, err := tx.Query(q)
+	rows, err := tx.Query(q, start, end)
 	if err != nil {
 		return nil, err
 	}

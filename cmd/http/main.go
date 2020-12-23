@@ -6,18 +6,22 @@ import (
 	"ledger/pkg/mytemplate"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type server struct{db *sql.DB}
+type server struct{ db *sql.DB }
 
 func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
-	mytemplate.LedgerHandler(tx, w, r)
+	// providing abritrary dates -- eventually these should be user inputs
+	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
+	mytemplate.LedgerHandler(tx, start, end, w, r)
 }
 
 func main() {

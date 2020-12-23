@@ -13,10 +13,12 @@ func TestGetLedger(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("one entry",
 		func(t *testing.T) {
+			start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+			end := start.AddDate(0, 0, 1)
 			input := ledger.Entry{
 				"savings",
 				"checking",
-				time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local),
+				start,
 				100,
 			}
 
@@ -28,7 +30,7 @@ func TestGetLedger(t *testing.T) {
 			want := []ledger.Entry{input}
 			var got []ledger.Entry
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-				got, err = ledger.GetLedger(tx)
+				got, err = ledger.GetLedger(tx, start, end)
 				return err
 			})
 			assertEqual(t, want, got)
