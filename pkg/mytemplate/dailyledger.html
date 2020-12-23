@@ -20,8 +20,11 @@
         <h1>Daily Ledger</h1>
         <table>
             <tr>
+            {{ range .Buckets }}
+                <th>{{ . }}</th>
+            {{ end }}
             </tr>
-            {{ range . }}
+            {{ range .DailyLedger }}
             <tr>
                 {{ range $b, $v := . }}
                 <td>{{ $v }}</td>
