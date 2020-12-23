@@ -17,6 +17,7 @@
         </style>
     </head>
     <body>
+        {{ $dl := .}}
         <h1>Daily Ledger</h1>
         <p>{{ .Start }} until {{ .End }}</p>
         <table>
@@ -25,9 +26,10 @@
                 <th>{{ . }}</th>
             {{ end }}
             </tr>
-            {{ range .DailyLedger }}
+            {{ range $index, $map := .Data }}
             <tr>
-                {{ range $b, $v := . }}
+                <td>{{ $dl.GetDate $index }}</td>
+                {{ range $b, $v := $map }}
                 <td>{{ $v }}</td>
                 {{ end }}
             </tr>
