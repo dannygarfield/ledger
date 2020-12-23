@@ -18,14 +18,13 @@ type DayLedger struct {
 func LedgerHandler(tx *sql.Tx, start, end time.Time, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Could not parse ledger.html (%v)", err), http.StatusInternalServerError)
 		return
 	}
 
 	myledger, err := ledger.GetLedger(tx, start, end)
 	data := struct {
-		Start  time.Time
-		End    time.Time
+		Start, End  time.Time
 		Ledger []ledger.Entry
 	}{
 		start,
@@ -39,22 +38,17 @@ func LedgerHandler(tx *sql.Tx, start, end time.Time, w http.ResponseWriter, r *h
 	t.Execute(w, data)
 }
 
-func DailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
+func DailyLedgerHandler(tx *sql.Tx, buckets []string, start, end time.Time, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/dailyledger.html")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Could not parse dailyledger.html (%v)", err), http.StatusInternalServerError)
 		return
 	}
-	data := map[string][]int{
-		"checking": {-100, -200, -300},
-		"savings":  {100, 200, 300},
-		"401k":     {0, 0, 0},
+
+	data, err := ledger.MakePlot(tx, buckets, start, end)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not call MakePlot() (%v)", err), http.StatusInternalServerError)
 	}
-	// data := []map[string]int{
-	// 	{"checking": -100, "savings": 100, "401k": 0},
-	// 	{"checking": -200, "savings": 200, "401k": 0},
-	// 	{"checking": -300, "savings": 300, "401k": 0},
-	// }
 
 	t.Execute(w, data)
 }

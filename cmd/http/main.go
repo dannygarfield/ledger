@@ -24,6 +24,18 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 	mytemplate.LedgerHandler(tx, start, end, w, r)
 }
 
+func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
+	}
+	// providing abritrary dates -- eventually these should be user inputs
+	buckets := []string{"checking", "savings", "rent"}
+	start := time.Date(2020, 12, 8, 0, 0, 0, 0, time.Local)
+	end := time.Date(2021, 12, 16, 0, 0, 0, 0, time.Local)
+	mytemplate.DailyLedgerHandler(tx, buckets, start, end, w, r)
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -41,7 +53,7 @@ func main() {
 	// http.HandleFunc("/insert", mytemplate.insertHandler)
 	// http.HandleFunc("/ledger", mytemplate.LedgerHandler)
 	http.HandleFunc("/ledger", s.ledgerHandler)
-	http.HandleFunc("/dailyledger", mytemplate.DailyLedgerHandler)
+	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.InsertHandler)
 	http.HandleFunc("/save", mytemplate.SaveHandler)
 

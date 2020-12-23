@@ -19,11 +19,12 @@
     <body>
         <h1>Daily Ledger</h1>
         <table>
-            {{ range $b, $v := . }}
             <tr>
-                <td>{{ $b }}</td>
-                {{ range $v }}
-                <td>{{ . }}</td>
+            </tr>
+            {{ range . }}
+            <tr>
+                {{ range $b, $v := . }}
+                <td>{{ $v }}</td>
                 {{ end }}
             </tr>
             {{ end }}
