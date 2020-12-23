@@ -94,13 +94,13 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 			}
 			return nil
 		})
-		want := []map[string]int{
-			{bucket1: -100, bucket2: 100, bucket3: 0},
-			{bucket1: -200, bucket2: 200, bucket3: 0},
-			{bucket1: -300, bucket2: 300, bucket3: 0},
+		want := map[string][]int{
+			bucket1: {-100, -200, -300},
+			bucket2: {100, 200, 300},
+			bucket3: {0, 0, 0},
 		}
 
-		var got []map[string]int
+		var got map[string][]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 			got, err = ledger.MakePlot(
 				tx,

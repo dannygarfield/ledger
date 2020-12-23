@@ -61,16 +61,22 @@ func SummarizeLedger(tx *sql.Tx, buckets []string, through time.Time) (map[strin
 	return out, nil
 }
 
-func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
-	out := []map[string]int{}
+func MakePlot(tx *sql.Tx, buckets []string, start, end time.Time) (map[string][]int, error) {
+	output := map[string][]int{}
+	for _, b := range buckets {
+		output[b] = []int{}
+	}
+
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
 		l, err := SummarizeLedger(tx, buckets, d)
 		if err != nil {
 			return nil, fmt.Errorf("ledger.MakePlot() summarizing ledger (%w)", err)
 		}
-		out = append(out, l)
+		for b, _ := range l {
+			output[b] = append(output[b], l[b])
+		}
 	}
-	return out, nil
+	return output, nil
 }
 
 func GetBuckets(tx *sql.Tx) ([]string, error) {
