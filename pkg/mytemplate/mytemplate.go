@@ -42,9 +42,9 @@ func DailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 		"401k":     {0, 0, 0},
 	}
 	// data := []map[string]int{
-	// 	{bucket1: -100, bucket2: 100, bucket3: 0},
-	// 	{bucket1: -200, bucket2: 200, bucket3: 0},
-	// 	{bucket1: -300, bucket2: 300, bucket3: 0},
+	// 	{"checking": -100, "savings": 100, "401k": 0},
+	// 	{"checking": -200, "savings": 200, "401k": 0},
+	// 	{"checking": -300, "savings": 300, "401k": 0},
 	// }
 
 	t.Execute(w, data)

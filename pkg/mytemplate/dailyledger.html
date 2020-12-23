@@ -3,13 +3,22 @@
 <html lang="en">
     <head>
         <title>ledger</title>
+        <style>
+            body {
+                font-size: 12px;
+                color: #777777;
+                font-family: Verdana;
+            }
+            table, th, td {
+                border: 1px solid #888888;
+                border-collapse: collapse;
+                padding: 4px;
+            }
+        </style>
     </head>
     <body>
         <h1>Daily Ledger</h1>
         <table>
-            <tr>
-                <th></th>
-            </tr>
             {{ range $b, $v := . }}
             <tr>
                 <td>{{ $b }}</td>
