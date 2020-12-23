@@ -47,28 +47,30 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Could not parse dailyledger.html (%v)", err), http.StatusInternalServerError)
 		return
 	}
-
+	// arbitrary start and end dates for now
 	start := time.Date(2020, 12, 8, 0, 0, 0, 0, time.Local)
 	end := time.Date(2021, 12, 16, 0, 0, 0, 0, time.Local)
-
+	// get all buckets
 	buckets, err := ledger.GetBuckets(tx)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not call GetBuckets() (%v)", err), http.StatusInternalServerError)
 	}
-
 	dailyledger, err := ledger.MakePlot(tx, buckets, start, end)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not call MakePlot() (%v)", err), http.StatusInternalServerError)
 	}
-
+	// construct data for html template
 	data := struct{
 		Buckets []string
+		Start, End time.Time
 		DailyLedger []map[string]int
 	}{
 		buckets,
+		start,
+		end,
 		dailyledger,
 	}
-
+	// execute template
 	t.Execute(w, data)
 }
 
