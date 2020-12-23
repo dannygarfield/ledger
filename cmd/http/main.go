@@ -18,10 +18,7 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
-	// providing abritrary dates -- eventually these should be user inputs
-	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
-	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
-	mytemplate.LedgerHandler(tx, start, end, w, r)
+	mytemplate.LedgerHandler(tx, w, r)
 }
 
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {

@@ -15,12 +15,15 @@ type DayLedger struct {
 	LedgerMap map[string]int
 }
 
-func LedgerHandler(tx *sql.Tx, start, end time.Time, w http.ResponseWriter, r *http.Request) {
+func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not parse ledger.html (%v)", err), http.StatusInternalServerError)
 		return
 	}
+
+	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
 
 	myledger, err := ledger.GetLedger(tx, start, end)
 	data := struct {
