@@ -125,8 +125,7 @@ func TestGetBuckets(t *testing.T) {
 		}
 
 		testutils.Tx(t, db, func(tx *sql.Tx) error {
-			err := ledger.InsertEntry(tx, input)
-			return err
+			return ledger.InsertEntry(tx, input)
 		})
 
 		want := []string{"checking", "savings"}
@@ -136,6 +135,31 @@ func TestGetBuckets(t *testing.T) {
 			got, err = ledger.GetBuckets(tx)
 			return err
 		})
+		assertEqual(t, want, got)
+	})
+}
+
+func TestMakePlot(t *testing.T) {
+	t.Run("empty summary (zero transactions)", func(t *testing.T) {
+		summary := []map[string]int{}
+		start := time.Now()
+		want := &ledger.PlotData{}
+		got := ledger.MakePlot(summary, start)
+		assertEqual(t, want, got)
+	})
+
+	t.Run("one transaction", func(t *testing.T) {
+		summary := []map[string]int{{"savings": -100, "checking": 100}}
+		start := time.Now()
+		startString := start.Format("2006-01-02")
+		want := &ledger.PlotData{
+			[]string{"checking", "savings"},
+			[]string{startString},
+			[][]int{{100, -100}},
+		}
+
+		got := ledger.MakePlot(summary, start)
+
 		assertEqual(t, want, got)
 	})
 }

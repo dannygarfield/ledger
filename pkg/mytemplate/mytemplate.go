@@ -22,7 +22,7 @@ type DailyLedger struct {
 }
 
 func (d DailyLedger) GetDate(index int) time.Time {
-	return d.Start.AddDate(0,0,index)
+	return d.Start.AddDate(0, 0, index)
 }
 
 // display a ledger on a single day

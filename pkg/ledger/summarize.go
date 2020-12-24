@@ -3,8 +3,15 @@ package ledger
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 )
+
+type PlotData struct {
+	BucketHeaders []string
+	DateHeaders   []string
+	Data          [][]int
+}
 
 func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 	q := `SELECT * FROM entries
@@ -71,6 +78,28 @@ func SummarizeLedgerOverTime(tx *sql.Tx, buckets []string, start, end time.Time)
 		output = append(output, l)
 	}
 	return output, nil
+}
+
+func MakePlot(summary []map[string]int, start time.Time) *PlotData {
+	output := &PlotData{}
+
+	if len(summary) > 0 {
+		for b, _ := range summary[0] {
+			output.BucketHeaders = append(output.BucketHeaders, b)
+		}
+		sort.Strings(output.BucketHeaders)
+
+		for i, day := range summary {
+			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i).Format("2006-01-02"))
+			row := []int{}
+			for _, b := range output.BucketHeaders {
+				row = append(row, day[b])
+			}
+			output.Data = append(output.Data, row)
+		}
+	}
+
+	return output
 }
 
 func GetBuckets(tx *sql.Tx) ([]string, error) {
