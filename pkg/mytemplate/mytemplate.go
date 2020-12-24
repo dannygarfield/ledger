@@ -67,9 +67,9 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not call GetBuckets() (%v)", err), http.StatusInternalServerError)
 	}
-	plot, err := ledger.MakePlot(tx, buckets, start, end)
+	plot, err := ledger.SummarizeLedgerOverTime(tx, buckets, start, end)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not call MakePlot() (%v)", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Could not call SummarizeLedgerOverTime() (%v)", err), http.StatusInternalServerError)
 	}
 
 	// construct data for html template

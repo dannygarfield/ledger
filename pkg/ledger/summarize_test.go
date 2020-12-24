@@ -102,7 +102,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 
 		var got []map[string]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-			got, err = ledger.MakePlot(
+			got, err = ledger.SummarizeLedgerOverTime(
 				tx,
 				[]string{bucket1, bucket2, bucket3},
 				start,
