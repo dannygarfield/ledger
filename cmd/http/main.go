@@ -42,12 +42,8 @@ func main() {
 	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hello, %v", r.URL)
 	})
-	// http.HandleFunc("/insert", mytemplate.insertHandler)
-	// http.HandleFunc("/ledger", mytemplate.LedgerHandler)
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
-	http.HandleFunc("/insert", mytemplate.InsertHandler)
-	http.HandleFunc("/save", mytemplate.SaveHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
