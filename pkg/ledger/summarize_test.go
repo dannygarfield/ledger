@@ -159,7 +159,21 @@ func TestMakePlot(t *testing.T) {
 		}
 
 		got := ledger.MakePlot(summary, start)
+		assertEqual(t, want, got)
+	})
 
+	t.Run("two transactions over two days", func(t *testing.T) {
+		summary := []map[string]int{{"savings": -100, "checking": 100}, {"savings": -200, "checking": 200}}
+		start := time.Now()
+		startString := start.Format("2006-01-02")
+		tomorrowString := start.AddDate(0, 0, 1).Format("2006-01-02")
+		want := &ledger.PlotData{
+			[]string{"checking", "savings"},
+			[]string{startString, tomorrowString},
+			[][]int{{100, -100}, {200, -200}},
+		}
+
+		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
 }
