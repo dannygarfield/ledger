@@ -142,12 +142,6 @@ func main() {
 		}
 		for b, v := range ledgerMap {
 			log.Printf("%s: %v", b, v)
-			// err := mytemplate.Readout(b, td, v)
-			// err := mytemplate.RenderDayLedger(td, ledgerMap)
-			// if err != nil {
-			// 	log.Fatalf("calling template.Readout (%v)", err)
-			// }
-
 		}
 	}
 }

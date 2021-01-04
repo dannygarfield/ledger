@@ -9,22 +9,6 @@ import (
 	"time"
 )
 
-// define a struct to feed into a template
-type DayLedger struct {
-	Day       string
-	LedgerMap map[string]int
-}
-
-type DailyLedger struct {
-	Buckets    []string
-	Start, End time.Time
-	Data       []map[string]int
-}
-
-func (d DailyLedger) GetDate(index int) time.Time {
-	return d.Start.AddDate(0, 0, index)
-}
-
 // display a ledger on a single day
 func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
