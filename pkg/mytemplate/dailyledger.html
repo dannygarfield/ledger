@@ -17,21 +17,21 @@
         </style>
     </head>
     <body>
-        {{ $dl := .}}
+        {{ $dates := .DateHeaders }}
         <h1>Daily Ledger</h1>
-        <p>{{ .Start }} until {{ .End }}</p>
         <table>
             <tr>
                 <th></th>
-            {{ range .Buckets }}
+                {{ range .BucketHeaders }}
                 <th>{{ . }}</th>
-            {{ end }}
+                {{ end }}
             </tr>
-            {{ range $index, $map := .Data }}
+
+            {{ range $index, $row := .Data }}
             <tr>
-                <td>{{ $dl.GetDate $index }}</td>
-                {{ range $b, $v := $map }}
-                <td>{{ $v }}</td>
+                <td>{{ index $dates $index }}</td>
+                {{ range $i, $value := . }}
+                <td>{{ $value }}</td>
                 {{ end }}
             </tr>
             {{ end }}
