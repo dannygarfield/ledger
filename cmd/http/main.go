@@ -9,6 +9,8 @@ import (
 	"ledger/pkg/mytemplate"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -37,21 +39,50 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not convert csv to entries (%v)", err), http.StatusInternalServerError)
 	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
+	}
+	for _, e := range entries {
+		err := ledger.InsertEntry(tx, e)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		http.Error(w, fmt.Sprintf("Could not commit sql transaction (%v)", err), http.StatusInternalServerError)
+	} else {
+		html := `<p>successfully uploaded file</p>
+			<p>Return to <a href="/insert">insert</a></p>
+			<p>View <a href="/ledger">ledger</a></p>
+			<p>View <a href="/dailyledger">dailyledger</a></p>`
 
-	// fmt.Printf("entries: %v\n", entries)
+		fmt.Fprintf(w, html)
+	}
+}
+
+func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	entrydate, _ := time.Parse("2006-01-02", r.PostForm["happened_at"][0])
+	amount, err := strconv.Atoi(r.PostForm["amount"][0])
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not convert amount field to int (%v)", err), http.StatusInternalServerError)
+	}
+
+	entry := ledger.Entry{
+		Source:      r.PostForm["source"][0],
+		Destination: r.PostForm["destination"][0],
+		EntryDate:   entrydate,
+		Amount:      amount,
+	}
 
 	tx, err := s.db.Begin()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
 
-	// fmt.Println("Opened the sql tx")
-
-	for _, e := range entries {
-		err := ledger.InsertEntry(tx, e)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
-		}
+	if err := ledger.InsertEntry(tx, entry); err != nil {
+		http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -81,7 +112,7 @@ func main() {
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
 	http.HandleFunc("/upload_entries_csv", s.uploadCsvHandler)
-	// http.HandleFunc("/upload_entry", s.uploadEntryHandler)
+	http.HandleFunc("/upload_entry", s.uploadEntryHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
