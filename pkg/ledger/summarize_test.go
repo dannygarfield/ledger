@@ -163,14 +163,14 @@ func TestMakePlot(t *testing.T) {
 	})
 
 	t.Run("two transactions over two days", func(t *testing.T) {
-		summary := []map[string]int{{"savings": -100, "checking": 100}, {"savings": -200, "checking": 200}}
+		summary := []map[string]int{{"savings": -100, "IRA": 0, "checking": 100}, {"savings": -100, "IRA": 50, "checking": 50}}
 		start := time.Now()
 		startString := start.Format("2006-01-02")
 		tomorrowString := start.AddDate(0, 0, 1).Format("2006-01-02")
 		want := &ledger.PlotData{
-			[]string{"checking", "savings"},
+			[]string{"IRA", "checking", "savings"},
 			[]string{startString, tomorrowString},
-			[][]int{{100, -100}, {200, -200}},
+			[][]int{{0, 100, -100}, {50, 50, -100}},
 		}
 
 		got := ledger.MakePlot(summary, start)
