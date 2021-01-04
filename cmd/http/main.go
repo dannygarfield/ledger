@@ -39,9 +39,6 @@ func main() {
 	// instead of constructing and returning a response object, we write directly
 	// to the response object (w)
 	// because of this, Golang http is http2 and websockets compatible
-	http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, %v", r.URL)
-	})
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 
