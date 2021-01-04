@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"ledger/pkg/csvreader"
 	"ledger/pkg/csvwriter"
 	"ledger/pkg/ledger"
 	"ledger/pkg/mytemplate"
@@ -34,31 +33,13 @@ func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
-	tempFilepath, _ := csvwriter.UploadFile(w, r)
-	entries, err := csvreader.CsvToEntries(tempFilepath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not convert csv to entries (%v)", err), http.StatusInternalServerError)
-	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
-	for _, e := range entries {
-		err := ledger.InsertEntry(tx, e)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		http.Error(w, fmt.Sprintf("Could not commit sql transaction (%v)", err), http.StatusInternalServerError)
-	} else {
-		html := `<p>successfully uploaded file</p>
-			<p>Return to <a href="/insert">insert</a></p>
-			<p>View <a href="/ledger">ledger</a></p>
-			<p>View <a href="/dailyledger">dailyledger</a></p>`
 
-		fmt.Fprintf(w, html)
-	}
+	csvwriter.UploadCsv(tx, w, r)
+
 }
 
 func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
