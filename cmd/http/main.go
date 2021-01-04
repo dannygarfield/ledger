@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"ledger/pkg/csvreader"
+	"ledger/pkg/csvwriter"
 	"ledger/pkg/ledger"
 	"ledger/pkg/mytemplate"
 	"log"
@@ -32,7 +32,7 @@ func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
-	tempFilepath, _ := uploadFile(w, r)
+	tempFilepath, _ := csvwriter.UploadFile(w, r)
 	entries, err := csvreader.CsvToEntries(tempFilepath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not convert csv to entries (%v)", err), http.StatusInternalServerError)
@@ -66,34 +66,6 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func uploadFile(w http.ResponseWriter, r *http.Request) (string, error) {
-
-	r.ParseMultipartForm(10 << 20) // max 10mb files
-
-	// retrieve file from posted form-data
-	file, _, err := r.FormFile("user_csv")
-	if err != nil {
-		return "", fmt.Errorf("Error retrieving file from form-data (%v)", err)
-	}
-	defer file.Close()
-
-	//  write temporary file
-	tempFile, err := ioutil.TempFile("tempcsv", "upload-*.csv")
-	if err != nil {
-		return "", fmt.Errorf("Error writing temp file (%v)", err)
-	}
-	defer tempFile.Close()
-
-	fileContent, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", fmt.Errorf("Error copying data to tempfile (%v)", err)
-	}
-	tempFile.Write(fileContent)
-	filepath := tempFile.Name()
-
-	return filepath, nil
-}
-
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -109,6 +81,7 @@ func main() {
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
 	http.HandleFunc("/upload_entries_csv", s.uploadCsvHandler)
+	// http.HandleFunc("/upload_entry", s.uploadEntryHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
