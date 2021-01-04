@@ -61,3 +61,12 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	// execute template
 	t.Execute(w, plot)
 }
+
+func Insert(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("pkg/mytemplate/insert.html")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not parse insert.html (%v)", err), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, nil)
+}

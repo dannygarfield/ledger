@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"ledger/pkg/ledger"
-	"log"
 	"os"
 	"strconv"
 )
@@ -35,7 +34,7 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 	}
 	// Validate order of columns
 	if header[0] != "source" || header[1] != "destination" || header[2] != "entrydate" || header[3] != "amount" {
-		log.Fatalln("Columns must be in order: source, destination, entrydate, amount")
+		return nil, fmt.Errorf("Columns must be in order: source, destination, entrydate, amount (%w)", err)
 	}
 
 	// construct slice of buckets to return
