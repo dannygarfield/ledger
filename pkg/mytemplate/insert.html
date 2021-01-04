@@ -3,10 +3,17 @@
 <html lang="en">
     <head>
         <title>insert</title>
+        <style>
+            body {
+                font-size: 12px;
+                color: #777777;
+                font-family: Verdana;
+            }
+        </style>
     </head>
     <body>
         <h1>Insert an entry</h1>
-        <form action="/save" method="POST">
+        <form action="/save_entry" enctype="multipart/form-data" method="POST">
           <label for="source">source:</label><br>
           <input type="text" id="source" name="source" value=""><br>
 
@@ -17,9 +24,16 @@
           <input type="text" id="happened_at" name="happened_at" value=""><br>
 
           <label for="amount">amount:</label><br>
-          <input type="text" id="amount" name="amount" value=""><br>
+          <input type="text" id="amount" name="amount" value=""><br><br>
 
           <input type="submit" value="Submit">
+        </form>
+
+        <h1>Insert entries by CSV</h1>
+        <form action="/upload_entries_csv" enctype="multipart/form-data" method="POST">
+            <label for="user_csv">Choose a CSV:</label>
+            <input type="file" id="user_csv" name="user_csv"><br><br>
+            <input type="submit" value="Submit">
         </form>
     </body>
 </html>
