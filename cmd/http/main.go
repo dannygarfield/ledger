@@ -6,6 +6,7 @@ import (
 	"ledger/pkg/csvwriter"
 	"ledger/pkg/ledger"
 	"ledger/pkg/mytemplate"
+	"ledger/pkg/utils"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,14 +18,13 @@ import (
 type server struct{ db *sql.DB }
 
 func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
-	}
-	mytemplate.LedgerHandler(tx, w, r)
-	if err := tx.Commit(); err != nil {
-		log.Printf("Could not commit sql transaction (%v)", err)
-	}
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		err := mytemplate.LedgerHandler(tx, w, r)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Could not call LedgerHandler (%v)", err), http.StatusInternalServerError)
+		}
+		return nil
+	})
 }
 
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
