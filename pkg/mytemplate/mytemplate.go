@@ -21,6 +21,10 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
 
 	myledger, err := ledger.GetLedger(tx, start, end)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not call ledger.GetLedger() (%v)", err), http.StatusInternalServerError)
+		return
+	}
 	data := struct {
 		Start, End time.Time
 		Ledger     []ledger.Entry
@@ -28,10 +32,6 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 		start,
 		end,
 		myledger,
-	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 	t.Execute(w, data)
 }

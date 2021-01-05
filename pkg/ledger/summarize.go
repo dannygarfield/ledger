@@ -20,7 +20,7 @@ func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 
 	rows, err := tx.Query(q, start, end)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Could not Query sql (%v)", err)
 	}
 	defer rows.Close()
 	var ledger []Entry

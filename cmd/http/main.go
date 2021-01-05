@@ -22,6 +22,9 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
 	mytemplate.LedgerHandler(tx, w, r)
+	if err := tx.Commit(); err != nil {
+		log.Printf("Could not commit sql transaction (%v)", err)
+	}
 }
 
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,9 +40,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
 	}
-
 	csvwriter.UploadCsv(tx, w, r)
-
 }
 
 func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +70,7 @@ func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
 	if err := tx.Commit(); err != nil {
 		http.Error(w, fmt.Sprintf("Could not commit sql transaction (%v)", err), http.StatusInternalServerError)
 	} else {
-		html := `<p>successfully uploaded file</p>
+		html := `<p>successfully inserted entry</p>
 			<p>Return to <a href="/insert">insert</a></p>
 			<p>View <a href="/ledger">ledger</a></p>
 			<p>View <a href="/dailyledger">dailyledger</a></p>`
