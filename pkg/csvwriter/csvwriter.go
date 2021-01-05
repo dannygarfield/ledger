@@ -9,29 +9,26 @@ import (
 	"net/http"
 )
 
-func UploadCsv(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
+func UploadCsv(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 
 	r.ParseMultipartForm(10 << 20) // max 10mb files
 
 	// retrieve file from posted form-data
 	file, _, err := r.FormFile("user_csv")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving file from form-data (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Error retrieving file from form-data (%v)", err)
 	}
 	defer file.Close()
 
 	//  write temporary file
 	tempFile, err := ioutil.TempFile("tempcsv", "upload-*.csv")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error writing temp file (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Error error writing temp file (%v)", err)
 	}
 	defer tempFile.Close()
 	fileContent, err := ioutil.ReadAll(file)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error copying data to tempfile (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Error copying data to tempfile (%v)", err)
 	}
 	tempFile.Write(fileContent)
 	filepath := tempFile.Name()
@@ -39,24 +36,14 @@ func UploadCsv(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	// convert to entries
 	entries, err := csvreader.CsvToEntries(filepath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not convert csv to entries (%v)", err), http.StatusInternalServerError)
+		return fmt.Errorf("Could not convert csv to entries (%v)", err)
 	}
 
 	for _, e := range entries {
 		err := ledger.InsertEntry(tx, e)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
+			return fmt.Errorf("Could not insert entries (%v)", err)
 		}
 	}
-	if err := tx.Commit(); err != nil {
-		http.Error(w, fmt.Sprintf("Could not commit sql transaction (%v)", err), http.StatusInternalServerError)
-	} else {
-		html := `<p>successfully uploaded file</p>
-			<p>Return to <a href="/insert">insert</a></p>
-			<p>View <a href="/ledger">ledger</a></p>
-			<p>View <a href="/dailyledger">dailyledger</a></p>`
-
-		fmt.Fprintf(w, html)
-	}
-
+	return nil
 }

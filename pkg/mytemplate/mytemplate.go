@@ -10,11 +10,10 @@ import (
 )
 
 // display a ledger on a single day
-func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
+func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not parse ledger.html (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Could not parse ledger.html (%v)", err)
 	}
 
 	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
@@ -22,8 +21,7 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 
 	myledger, err := ledger.GetLedger(tx, start, end)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not call ledger.GetLedger() (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Could not call ledger.GetLedger() (%v)", err)
 	}
 	data := struct {
 		Start, End time.Time
@@ -33,15 +31,17 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 		end,
 		myledger,
 	}
-	t.Execute(w, data)
+	if err = t.Execute(w, data); err != nil {
+		return fmt.Errorf("Could not Execute template (%v)", err)
+	}
+	return nil
 }
 
 // display the ledger over the course of 2+ days
-func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
+func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	t, err := template.ParseFiles("pkg/mytemplate/dailyledger.html")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not parse dailyledger.html (%v)", err), http.StatusInternalServerError)
-		return
+		return fmt.Errorf("Could not parse dailyledger.html (%v)", err)
 	}
 	// arbitrary start and end dates for now
 	start := time.Date(2020, 12, 8, 0, 0, 0, 0, time.Local)
@@ -49,17 +49,18 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) {
 	// get all buckets
 	buckets, err := ledger.GetBuckets(tx)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not call GetBuckets() (%v)", err), http.StatusInternalServerError)
+		return fmt.Errorf("Could not call GetBuckets() (%v)", err)
 	}
 	summary, err := ledger.SummarizeLedgerOverTime(tx, buckets, start, end)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not call SummarizeLedgerOverTime() (%v)", err), http.StatusInternalServerError)
+		return fmt.Errorf("Could not call SummarizeLedgerOverTime (%v)", err)
 	}
-
 	plot := ledger.MakePlot(summary, start)
-
 	// execute template
-	t.Execute(w, plot)
+	if err = t.Execute(w, plot); err != nil {
+		return fmt.Errorf("Could not Execute template (%v)", err)
+	}
+	return nil
 }
 
 func Insert(w http.ResponseWriter, r *http.Request) {

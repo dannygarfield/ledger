@@ -22,25 +22,30 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 		err := mytemplate.LedgerHandler(tx, w, r)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Could not call LedgerHandler (%v)", err), http.StatusInternalServerError)
+			return err
 		}
 		return nil
 	})
 }
 
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
-	}
-	mytemplate.DailyLedgerHandler(tx, w, r)
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		if err := mytemplate.DailyLedgerHandler(tx, w, r); err != nil {
+			http.Error(w, fmt.Sprintf("Could not call LedgerHandler (%v)", err), http.StatusInternalServerError)
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
-	tx, err := s.db.Begin()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
-	}
-	csvwriter.UploadCsv(tx, w, r)
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		if err := csvwriter.UploadCsv(tx, w, r); err != nil {
+			http.Error(w, fmt.Sprintf("Could not call UploadCsv (%v)", err), http.StatusInternalServerError)
+			return err
+		}
+		return nil
+	})
 }
 
 func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
