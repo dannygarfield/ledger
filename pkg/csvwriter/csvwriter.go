@@ -36,13 +36,13 @@ func UploadCsv(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// convert to entries
 	entries, err := csvreader.CsvToEntries(filepath)
 	if err != nil {
-		return fmt.Errorf("Could not convert csv to entries (%v)", err)
+		return fmt.Errorf("Calling csvreader.CsvToEntries() (%v)", err)
 	}
 
 	for _, e := range entries {
 		err := ledger.InsertEntry(tx, e)
 		if err != nil {
-			return fmt.Errorf("Could not insert entries (%v)", err)
+			return fmt.Errorf("Calling ledger.InsertEntry (%v)", err)
 		}
 	}
 	return nil

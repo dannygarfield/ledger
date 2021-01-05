@@ -69,10 +69,7 @@ func main() {
 	}
 
 	s := &server{db: db}
-	// register a path
-	// instead of constructing and returning a response object, we write directly
-	// to the response object (w)
-	// because of this, Golang http is http2 and websockets compatible
+	
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)

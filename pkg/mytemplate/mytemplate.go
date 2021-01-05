@@ -21,7 +21,7 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 
 	myledger, err := ledger.GetLedger(tx, start, end)
 	if err != nil {
-		return fmt.Errorf("Could not call ledger.GetLedger() (%v)", err)
+		return fmt.Errorf("Calling ledger.GetLedger() (%v)", err)
 	}
 	data := struct {
 		Start, End time.Time
@@ -49,11 +49,11 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) erro
 	// get all buckets
 	buckets, err := ledger.GetBuckets(tx)
 	if err != nil {
-		return fmt.Errorf("Could not call GetBuckets() (%v)", err)
+		return fmt.Errorf("Calling ledger.GetBuckets() (%v)", err)
 	}
 	summary, err := ledger.SummarizeLedgerOverTime(tx, buckets, start, end)
 	if err != nil {
-		return fmt.Errorf("Could not call SummarizeLedgerOverTime (%v)", err)
+		return fmt.Errorf("Calling ledger.SummarizeLedgerOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start)
 	// execute template
