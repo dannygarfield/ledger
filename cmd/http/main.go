@@ -9,8 +9,6 @@ import (
 	"ledger/pkg/utils"
 	"log"
 	"net/http"
-	"strconv"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,7 +19,7 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		err := mytemplate.LedgerHandler(tx, w, r)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Could not call LedgerHandler (%v)", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
@@ -31,7 +29,7 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		if err := mytemplate.DailyLedgerHandler(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Could not call LedgerHandler (%v)", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
@@ -41,7 +39,7 @@ func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		if err := csvwriter.UploadCsv(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Could not call UploadCsv (%v)", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Calling csvwriter.UploadCsv (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
@@ -49,39 +47,19 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	entrydate, _ := time.Parse("2006-01-02", r.PostForm["happened_at"][0])
-	amount, err := strconv.Atoi(r.PostForm["amount"][0])
+	entry, err := ledger.PrepareEntryForInsert(r)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not convert amount field to int (%v)", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Calling ledger.PrepareEntryForInsert() (%v)", err), http.StatusInternalServerError)
+		return
 	}
 
-	entry := ledger.Entry{
-		Source:      r.PostForm["source"][0],
-		Destination: r.PostForm["destination"][0],
-		EntryDate:   entrydate,
-		Amount:      amount,
-	}
-
-	tx, err := s.db.Begin()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not open sql transaction (%v)", err), http.StatusInternalServerError)
-	}
-
-	if err := ledger.InsertEntry(tx, entry); err != nil {
-		http.Error(w, fmt.Sprintf("Could not insert entries (%v)", err), http.StatusInternalServerError)
-	}
-
-	if err := tx.Commit(); err != nil {
-		http.Error(w, fmt.Sprintf("Could not commit sql transaction (%v)", err), http.StatusInternalServerError)
-	} else {
-		html := `<p>successfully inserted entry</p>
-			<p>Return to <a href="/insert">insert</a></p>
-			<p>View <a href="/ledger">ledger</a></p>
-			<p>View <a href="/dailyledger">dailyledger</a></p>`
-
-		fmt.Fprintf(w, html)
-	}
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		if err := ledger.InsertEntry(tx, entry); err != nil {
+			http.Error(w, fmt.Sprintf("Calling ledger.InsertEntry() (%v)", err), http.StatusInternalServerError)
+			return err
+		}
+		return nil
+	})
 }
 
 func main() {

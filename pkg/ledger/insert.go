@@ -3,6 +3,8 @@ package ledger
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -50,6 +52,25 @@ func InsertRepeatingEntry(tx *sql.Tx, e Entry, freq string) error {
 		e.EntryDate = e.EntryDate.AddDate(0, freqMonth, freqDay)
 	}
 	return nil
+}
+
+func PrepareEntryForInsert(r *http.Request) (Entry, error) {
+	r.ParseForm()
+	entrydate, err := time.Parse("2006-01-02", r.PostForm["happened_at"][0])
+	if err != nil {
+		return Entry{}, fmt.Errorf("Could not parse entrydate (%v)", err)
+	}
+	amount, err := strconv.Atoi(r.PostForm["amount"][0])
+	if err != nil {
+		return Entry{}, fmt.Errorf("Could not convert amount field to int (%v)", err)
+	}
+	entry := Entry{
+		Source:      r.PostForm["source"][0],
+		Destination: r.PostForm["destination"][0],
+		EntryDate:   entrydate,
+		Amount:      amount,
+	}
+	return entry, nil
 }
 
 // parse a date
