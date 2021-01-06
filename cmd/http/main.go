@@ -44,6 +44,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return nil
 	})
+	mytemplate.Insert(w, r)
 }
 
 func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +61,8 @@ func (s *server) uploadEntryHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return nil
 	})
+	// mytemplate.Insert(w, r)
+	s.ledgerHandler(w, r)
 }
 
 func main() {
@@ -69,7 +72,7 @@ func main() {
 	}
 
 	s := &server{db: db}
-	
+
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
