@@ -15,9 +15,26 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("Could not parse ledger.html (%v)", err)
 	}
+	// parse form
+	r.ParseForm()
+	fmt.Println("PostForm:", r.PostForm)
+	formStart := r.PostForm["start"]
+	formEnd := r.PostForm["end"]
 
 	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+	if len(formStart) > 0 && formStart[0] != "" {
+		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing start time (%v)", err)
+		}
+	}
 	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
+	if len(formEnd) > 0 && formEnd[0] != "" {
+		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing end time (%v)", err)
+		}
+	}
 
 	myledger, err := ledger.GetLedger(tx, start, end)
 	if err != nil {

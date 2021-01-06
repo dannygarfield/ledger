@@ -24,7 +24,14 @@
             <li><a href="/dailyledger">daily ledger</a></li>
         </ul>
         <h1>Ledger</h1>
-        <p>From {{ .Start }} until {{ .End }}<p>
+        <p>From <b>{{ .Start }}</b> until <b>{{ .End }}</b><p>
+        <form action="/ledger" method="POST">
+            <label for="start">start:</label>
+            <input type="date" id="start" name="start">
+            <label for="end">end:</label>
+            <input type="date" id="end" name="end">
+            <input type="submit" value="Submit">
+        </form>
         <table>
             <tr>
                 <th>Source</th>
