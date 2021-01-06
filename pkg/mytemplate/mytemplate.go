@@ -60,21 +60,53 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) erro
 	if err != nil {
 		return fmt.Errorf("Could not parse dailyledger.html (%v)", err)
 	}
-	// arbitrary start and end dates for now
-	start := time.Date(2020, 12, 8, 0, 0, 0, 0, time.Local)
-	end := time.Date(2021, 12, 16, 0, 0, 0, 0, time.Local)
+
+	r.ParseForm()
+	fmt.Println("PostForm:", r.PostForm)
+	formStart := r.PostForm["start"]
+	formEnd := r.PostForm["end"]
+	formBuckets := r.PostForm["buckets"]
+
+	start := time.Now().AddDate(0, -1, 0)
+	if len(formStart) > 0 && formStart[0] != "" {
+		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing start time (%v)", err)
+		}
+	}
+	end := time.Now().AddDate(0, 1, 0)
+	if len(formEnd) > 0 && formEnd[0] != "" {
+		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing end time (%v)", err)
+		}
+	}
+
 	// get all buckets
-	buckets, err := ledger.GetBuckets(tx)
+	allBuckets, err := ledger.GetBuckets(tx)
 	if err != nil {
 		return fmt.Errorf("Calling ledger.GetBuckets() (%v)", err)
 	}
-	summary, err := ledger.SummarizeLedgerOverTime(tx, buckets, start, end)
+	if len(formBuckets) == 0 {
+		formBuckets = allBuckets
+	}
+
+	summary, err := ledger.SummarizeLedgerOverTime(tx, formBuckets, start, end)
 	if err != nil {
 		return fmt.Errorf("Calling ledger.SummarizeLedgerOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start)
+
+	data := struct {
+		AllBuckets []string
+		Plot       ledger.PlotData
+	}{
+		allBuckets,
+		*plot,
+	}
+
 	// execute template
-	if err = t.Execute(w, plot); err != nil {
+	if err = t.Execute(w, data); err != nil {
 		return fmt.Errorf("Could not Execute template (%v)", err)
 	}
 	return nil

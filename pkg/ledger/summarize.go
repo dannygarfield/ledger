@@ -84,7 +84,7 @@ func MakePlot(summary []map[string]int, start time.Time) *PlotData {
 	output := &PlotData{}
 
 	if len(summary) > 0 {
-		for b, _ := range summary[0] {
+		for b := range summary[0] {
 			output.BucketHeaders = append(output.BucketHeaders, b)
 		}
 		sort.Strings(output.BucketHeaders)

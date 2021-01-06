@@ -29,7 +29,7 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		if err := mytemplate.DailyLedgerHandler(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerHandler (%v)", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Calling mytemplate.DailyLedgerHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil

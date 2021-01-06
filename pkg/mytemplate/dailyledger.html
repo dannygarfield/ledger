@@ -4,7 +4,7 @@
     <head>
         <title>ledger</title>
         <style>
-            body {
+            body, form, label, input, option {
                 font-size: 14px;
                 color: #777777;
                 font-family: Verdana;
@@ -13,6 +13,9 @@
                 border: 1px solid #888888;
                 border-collapse: collapse;
                 padding: 4px;
+            }
+            select {
+                vertical-align: top;
             }
         </style>
     </head>
@@ -23,17 +26,35 @@
             <li><a href="/ledger">ledger</a></li>
             <li><a href="/dailyledger">daily ledger</a></li>
         </ul>
-        {{ $dates := .DateHeaders }}
+
+        <form action="/dailyledger" method="POST">
+            <label for="start">start:</label>
+            <input type="date" id="start" name="start">
+
+            <label for="end">end:</label>
+            <input type="date" id="end" name="end">
+
+            <label for="buckets">buckets:</label>
+            <select id="buckets" name="buckets" multiple>
+                {{ range .AllBuckets }}
+                <option value="{{ . }}">{{ . }}</option>
+                {{ end }}
+            </select>
+            <br>
+            <input type="submit" value="Submit">
+        </form>
+
+        {{ $dates := .Plot.DateHeaders }}
         <h1>Daily Ledger</h1>
         <table>
             <tr>
                 <th></th>
-                {{ range .BucketHeaders }}
+                {{ range .Plot.BucketHeaders }}
                 <th>{{ . }}</th>
                 {{ end }}
             </tr>
 
-            {{ range $index, $row := .Data }}
+            {{ range $index, $row := .Plot.Data }}
             <tr>
                 <td>{{ index $dates $index }}</td>
                 {{ range $i, $value := . }}
