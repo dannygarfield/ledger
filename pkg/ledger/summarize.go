@@ -3,6 +3,7 @@ package ledger
 import (
 	"database/sql"
 	"fmt"
+	"ledger/pkg/utils"
 	"sort"
 	"time"
 )
@@ -39,15 +40,15 @@ func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 }
 
 // get net amount of a single bucket through a given date
-func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) {
+func SummarizeBucket(tx *sql.Tx, bucket string, from, through time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0) FROM (
 		SELECT amount, happened_at FROM entries WHERE destination = $1
 		UNION ALL
 		SELECT -amount, happened_at from entries where source = $1
 		)
-		WHERE date(happened_at) <= date($2)
+		WHERE date(happened_at) BETWEEN date($2) AND date($3)
 		ORDER BY sum(amount) DESC;`
-	row := tx.QueryRow(q, bucket, through)
+	row := tx.QueryRow(q, bucket, from, through)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
 		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
@@ -56,10 +57,10 @@ func SummarizeBucket(tx *sql.Tx, bucket string, through time.Time) (int, error) 
 }
 
 // get net amounts of all buckets through a given date
-func SummarizeLedger(tx *sql.Tx, buckets []string, through time.Time) (map[string]int, error) {
+func SummarizeLedger(tx *sql.Tx, buckets []string, from, through time.Time) (map[string]int, error) {
 	out := map[string]int{}
 	for _, b := range buckets {
-		val, err := SummarizeBucket(tx, b, through)
+		val, err := SummarizeBucket(tx, b, from, through)
 		if err != nil {
 			return nil, err
 		}
@@ -69,9 +70,10 @@ func SummarizeLedger(tx *sql.Tx, buckets []string, through time.Time) (map[strin
 }
 
 func SummarizeLedgerOverTime(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
+	bigBang := utils.BigBang()
 	output := []map[string]int{}
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
-		l, err := SummarizeLedger(tx, buckets, d)
+		l, err := SummarizeLedger(tx, buckets, bigBang, d)
 		if err != nil {
 			return nil, fmt.Errorf("ledger.SummarizeLedgerOverTime() summarizing ledger (%w)", err)
 		}

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"ledger/pkg/ledger"
 	"ledger/pkg/testutils"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -13,7 +12,7 @@ func TestGetLedger(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("one entry",
 		func(t *testing.T) {
-			start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+			start := time.Date(2004, 8, 16, 0, 0, 0, 0, time.Local)
 			end := start.AddDate(0, 0, 1)
 			input := ledger.Entry{
 				"savings",
@@ -39,37 +38,53 @@ func TestGetLedger(t *testing.T) {
 
 func TestSummarizeLedger(t *testing.T) {
 	db := testutils.Db(t)
-	t.Run("one entry",
+	bigBang := testutils.BigBang()
+	t.Run("one entry, summarize from beginning of time",
 		func(t *testing.T) {
-			// GIVEN
-			entryDate := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
-			sourceBucket := "savings"
-			destBucket := "checking"
-
-			inputEntry := ledger.Entry{sourceBucket, destBucket, entryDate, 100}
-
+			entryDate := time.Now()
+			entry := ledger.Entry{
+				Source:      "savings",
+				Destination: "checking",
+				Amount:      100,
+				EntryDate:   entryDate,
+			}
 			// insert entry
 			testutils.Tx(t, db, func(tx *sql.Tx) error {
-				err := ledger.InsertEntry(tx, inputEntry)
+				err := ledger.InsertEntry(tx, entry)
 				return err
 			})
+			// summarize from begining of time
+			{
+				want := map[string]int{"savings": -100, "checking": 100}
+				var got map[string]int
+				testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+					got, err = ledger.SummarizeLedger(
+						tx,
+						[]string{"savings", "checking"},
+						bigBang,
+						entryDate.AddDate(0, 0, 1),
+					)
+					return err
+				})
+				assertEqual(t, want, got)
+			}
+			// summarize before entryDate
+			{
+				want := map[string]int{"savings": 0, "checking": 0}
+				var got map[string]int
+				testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+					got, err = ledger.SummarizeLedger(
+						tx,
+						[]string{"savings", "checking"},
+						bigBang,
+						entryDate.AddDate(0, 0, -1),
+					)
+					return err
+				})
+				assertEqual(t, want, got)
+			}
 
-			want := map[string]int{"savings": -100, "checking": 100}
-
-			// When
-			var got map[string]int
-			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-				got, err = ledger.SummarizeLedger(
-					tx,
-					[]string{sourceBucket, destBucket},
-					entryDate.AddDate(0, 0, 1),
-				)
-				return err
-			})
-
-			// Then
-			assertEqual(t, want, got)
-		})
+	})
 }
 
 func TestSummarizeBalanceOverTime(t *testing.T) {
@@ -78,7 +93,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 		bucket1 := "our source bucket"
 		bucket2 := "our destination bucket"
 		bucket3 := "our bucket with zero entries"
-		start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+		start := time.Now()
 
 		input := []ledger.Entry{
 			{bucket1, bucket2, start, 100},
@@ -99,7 +114,6 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 			{bucket1: -200, bucket2: 200, bucket3: 0},
 			{bucket1: -300, bucket2: 300, bucket3: 0},
 		}
-
 		var got []map[string]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 			got, err = ledger.SummarizeLedgerOverTime(
@@ -120,17 +134,14 @@ func TestGetBuckets(t *testing.T) {
 		input := ledger.Entry{
 			"savings",
 			"checking",
-			time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local),
+			time.Date(2004, 8, 16, 0, 0, 0, 0, time.Local),
 			100,
 		}
-
 		testutils.Tx(t, db, func(tx *sql.Tx) error {
 			return ledger.InsertEntry(tx, input)
 		})
-
 		want := []string{"checking", "savings"}
 		var got []string
-
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 			got, err = ledger.GetBuckets(tx)
 			return err
@@ -147,7 +158,6 @@ func TestMakePlot(t *testing.T) {
 		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
-
 	t.Run("one transaction", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "checking": 100}}
 		start := time.Now()
@@ -161,7 +171,6 @@ func TestMakePlot(t *testing.T) {
 		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
-
 	t.Run("two transactions over two days", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "IRA": 0, "checking": 100}, {"savings": -100, "IRA": 50, "checking": 50}}
 		start := time.Now()
@@ -172,15 +181,7 @@ func TestMakePlot(t *testing.T) {
 			[]string{startString, tomorrowString},
 			[][]int{{0, 100, -100}, {50, 50, -100}},
 		}
-
 		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
-}
-
-func assertEqual(t *testing.T, want, got interface{}) {
-	t.Helper()
-	if b := reflect.DeepEqual(want, got); !b {
-		t.Fatalf("want: %v, got: %v", want, got)
-	}
 }

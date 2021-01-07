@@ -4,7 +4,12 @@ import (
 	"database/sql"
 	"io/ioutil"
 	"testing"
+	"time"
 )
+
+func BigBang() time.Time {
+	return time.Date(1996, 04, 11, 0, 0, 0, 0, time.Local)
+}
 
 func Db(t *testing.T) *sql.DB {
 	t.Helper()

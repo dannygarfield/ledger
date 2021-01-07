@@ -22,7 +22,7 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]
 	// set start date
-	start := time.Date(1992, 8, 16, 0, 0, 0, 0, time.Local)
+	start := time.Now().AddDate(0, -1, 0)
 	if len(formStart) > 0 && formStart[0] != "" {
 		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
 		if err != nil {
@@ -30,7 +30,7 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	// set end date
-	end := time.Date(2024, 8, 16, 0, 0, 0, 0, time.Local)
+	end := time.Now().AddDate(0, 1, 0)
 	if len(formEnd) > 0 && formEnd[0] != "" {
 		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
 		if err != nil {

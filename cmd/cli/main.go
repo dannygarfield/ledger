@@ -113,6 +113,7 @@ func main() {
 			log.Fatalf("committing sql transaction: %v", err)
 		}
 	} else if *summaryMode {
+		bigBang := time.Date(1996, 04, 11, 0, 0, 0, 0, time.Local)
 		// summarize all buckets through a given date
 		td := time.Now()
 		if *through != "" {
@@ -133,7 +134,7 @@ func main() {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
 		// get ledger summary
-		ledgerMap, err := ledger.SummarizeLedger(tx, bucketList, td)
+		ledgerMap, err := ledger.SummarizeLedger(tx, bucketList, bigBang, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
