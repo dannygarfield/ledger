@@ -2,6 +2,7 @@ package ledger_test
 
 import (
 	"database/sql"
+	"fmt"
 	"ledger/pkg/ledger"
 	"ledger/pkg/testutils"
 	"testing"
@@ -82,7 +83,7 @@ func TestSummarizeBalance(t *testing.T) {
 				assertEqual(t, want, got)
 			}
 
-	})
+		})
 }
 
 func TestSummarizeBalanceOverTime(t *testing.T) {
@@ -126,15 +127,80 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 	})
 }
 
+func TestSummarizeEntriesOverTime(t *testing.T) {
+	db := testutils.Db(t)
+	t.Run("empty summary (zero entries)",
+		func(t *testing.T) {
+			today := time.Now()
+			want := []map[string]int{}
+			var got []map[string]int
+			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+				got, err = ledger.SummarizeEntriesOverTime(
+					tx,
+					[]string{},
+					today,
+					today,
+					1, // interval: summarize daily
+				)
+				return err
+			})
+			assertEqual(t, want, got)
+		})
+
+	t.Run("two entries over two days",
+		func(t *testing.T) {
+			start := time.Now()
+			end := start.AddDate(0, 0, 3)
+			entry := ledger.Entry{
+				Source:      "savings",
+				Destination: "checking",
+				EntryDate:   start,
+				Amount:      100,
+			}
+			// insert entries
+			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+				fmt.Println("END:", end)
+				for i := 0; i < 2; i++ {
+					fmt.Println("ENTRY DATE:", entry.EntryDate)
+					err := ledger.InsertEntry(tx, entry)
+					if err != nil {
+						return err
+					}
+					entry.EntryDate = entry.EntryDate.AddDate(0, 0, 1)
+				}
+				return err
+			})
+			// summarize transactions daily
+			interval := 1 // group daily
+			want := []map[string]int{
+				{"checking": 100, "savings": -100},
+				{"checking": 100, "savings": -100},
+				{"checking": 0, "savings": 0},
+			}
+			var got []map[string]int
+			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+				got, err = ledger.SummarizeEntriesOverTime(
+					tx,
+					[]string{"checking", "savings"},
+					start,
+					end,
+					interval,
+				)
+				return err
+			})
+			assertEqual(t, want, got)
+		})
+}
+
 func TestMakePlot(t *testing.T) {
-	t.Run("empty summary (zero transactions)", func(t *testing.T) {
+	t.Run("empty summary (zero entries)", func(t *testing.T) {
 		summary := []map[string]int{}
 		start := time.Now()
 		want := &ledger.PlotData{}
 		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
-	t.Run("one transaction", func(t *testing.T) {
+	t.Run("one entry", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "checking": 100}}
 		start := time.Now()
 		startString := start.Format("2006-01-02")
@@ -147,7 +213,7 @@ func TestMakePlot(t *testing.T) {
 		got := ledger.MakePlot(summary, start)
 		assertEqual(t, want, got)
 	})
-	t.Run("two transactions over two days", func(t *testing.T) {
+	t.Run("two entries over two days", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "IRA": 0, "checking": 100}, {"savings": -100, "IRA": 50, "checking": 50}}
 		start := time.Now()
 		startString := start.Format("2006-01-02")

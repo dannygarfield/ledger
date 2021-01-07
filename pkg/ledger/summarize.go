@@ -14,6 +14,7 @@ type PlotData struct {
 	Data          [][]int
 }
 
+// get all entries in the ledger from start through finish
 func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 	q := `SELECT * FROM entries
 		WHERE date(happened_at) >= date($1) AND date(happened_at) < date($2)
@@ -39,8 +40,8 @@ func GetLedger(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 	return ledger, nil
 }
 
-// get net amount of a single bucket through a given date
-func SummarizeBucket(tx *sql.Tx, bucket string, from, through time.Time) (int, error) {
+// get net amount of a single bucket over a given time
+func SummarizeBucket(tx *sql.Tx, bucket string, start, end time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0) FROM (
 		SELECT amount, happened_at FROM entries WHERE destination = $1
 		UNION ALL
@@ -48,7 +49,7 @@ func SummarizeBucket(tx *sql.Tx, bucket string, from, through time.Time) (int, e
 		)
 		WHERE date(happened_at) BETWEEN date($2) AND date($3)
 		ORDER BY sum(amount) DESC;`
-	row := tx.QueryRow(q, bucket, from, through)
+	row := tx.QueryRow(q, bucket, start, end)
 	var sum int
 	if err := row.Scan(&sum); err != nil {
 		return -1, fmt.Errorf("summarizeBucket() - querying rows: %w", err)
@@ -56,7 +57,7 @@ func SummarizeBucket(tx *sql.Tx, bucket string, from, through time.Time) (int, e
 	return sum, nil
 }
 
-// get net amounts of all buckets over a given period of time
+// get net amounts of provided buckets over a given time
 func SummarizeBalance(tx *sql.Tx, buckets []string, from, through time.Time) (map[string]int, error) {
 	out := map[string]int{}
 	for _, b := range buckets {
@@ -69,15 +70,29 @@ func SummarizeBalance(tx *sql.Tx, buckets []string, from, through time.Time) (ma
 	return out, nil
 }
 
+// get daily balances (starting from bigBang) of provided buckets over a given time
 func SummarizeBalanceOverTime(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
 	bigBang := utils.BigBang()
 	output := []map[string]int{}
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
-		l, err := SummarizeBalance(tx, buckets, bigBang, d)
+		balance, err := SummarizeBalance(tx, buckets, bigBang, d)
 		if err != nil {
 			return nil, fmt.Errorf("ledger.SummarizeBalanceOverTime() summarizing ledger (%w)", err)
 		}
-		output = append(output, l)
+		output = append(output, balance)
+	}
+	return output, nil
+}
+
+// get totals over time, grouped into provided intervals of time
+func SummarizeEntriesOverTime(tx *sql.Tx, buckets []string, start, end time.Time, interval int) ([]map[string]int, error) {
+	output := []map[string]int{}
+	for d := start; d.Before(end); d = d.AddDate(0, 0, interval) {
+		sum, err := SummarizeBalance(tx, buckets, d, d.AddDate(0, 0, interval-1))
+		if err != nil {
+			return nil, fmt.Errorf("ledger.SummarizeEntriesOverTime() summarizing ledger (%w)", err)
+		}
+		output = append(output, sum)
 	}
 	return output, nil
 }
