@@ -2,7 +2,7 @@
 {{ block "content" . }}
 <html lang="en">
     <head>
-        <title>ledger</title>
+        <title>ledger | daily balance</title>
         <style>
             body, form, label, input, option {
                 font-size: 14px;
@@ -25,10 +25,10 @@
         <ul>
             <li><a href="/insert">insert</a></li>
             <li><a href="/ledger">ledger</a></li>
-            <li><a href="/dailyledger">daily ledger</a></li>
+            <li><a href="/dailybalance">daily balance</a></li>
         </ul>
 
-        <form action="/dailyledger" method="POST">
+        <form action="/dailybalance" method="POST">
             <label for="start">start:</label>
             <input type="date" id="start" name="start">
 
@@ -46,7 +46,7 @@
         </form>
 
         {{ $dates := .Plot.DateHeaders }}
-        <h1>Daily Ledger</h1>
+        <h1>Daily Balance</h1>
         <table>
             <tr>
                 <th></th>

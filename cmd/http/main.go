@@ -26,10 +26,10 @@ func (s *server) ledgerHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) dailyLedgerHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) dailyBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := mytemplate.DailyLedgerHandler(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.DailyLedgerHandler (%v)", err), http.StatusInternalServerError)
+		if err := mytemplate.DailyBalanceHandler(tx, w, r); err != nil {
+			http.Error(w, fmt.Sprintf("Calling mytemplate.DailyBalanceHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
@@ -74,7 +74,7 @@ func main() {
 	s := &server{db: db}
 
 	http.HandleFunc("/ledger", s.ledgerHandler)
-	http.HandleFunc("/dailyledger", s.dailyLedgerHandler)
+	http.HandleFunc("/dailybalance", s.dailyBalanceHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
 	http.HandleFunc("/upload_entries_csv", s.uploadCsvHandler)
 	http.HandleFunc("/upload_entry", s.uploadEntryHandler)

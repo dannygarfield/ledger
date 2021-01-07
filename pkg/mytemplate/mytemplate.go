@@ -18,7 +18,6 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	}
 	// parse html form
 	r.ParseForm()
-	fmt.Println("PostForm:", r.PostForm)
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]
 	// set start date
@@ -56,12 +55,12 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// display the ledger over the course of 2+ days
-func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+// display the ledger over time, daily
+func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
-	t, err := template.ParseFiles("pkg/mytemplate/dailyledger.html")
+	t, err := template.ParseFiles("pkg/mytemplate/dailybalance.html")
 	if err != nil {
-		return fmt.Errorf("Could not parse dailyledger.html (%v)", err)
+		return fmt.Errorf("Could not parse dailybalance.html (%v)", err)
 	}
 	// parse html form
 	r.ParseForm()
@@ -95,9 +94,9 @@ func DailyLedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) erro
 		formBuckets = allBuckets
 	}
 	// get summary data and format for html
-	summary, err := ledger.SummarizeLedgerOverTime(tx, formBuckets, start, end)
+	summary, err := ledger.SummarizeBalanceOverTime(tx, formBuckets, start, end)
 	if err != nil {
-		return fmt.Errorf("Calling ledger.SummarizeLedgerOverTime (%v)", err)
+		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start)
 	data := struct {

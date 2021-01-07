@@ -134,7 +134,7 @@ func main() {
 			log.Fatalf("summarizing buckets: %v", err)
 		}
 		// get ledger summary
-		ledgerMap, err := ledger.SummarizeLedger(tx, bucketList, bigBang, td)
+		ledgerMap, err := ledger.SummarizeBalance(tx, bucketList, bigBang, td)
 		if err != nil {
 			log.Fatalf("summarizing buckets: %v", err)
 		}

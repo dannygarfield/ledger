@@ -56,8 +56,8 @@ func SummarizeBucket(tx *sql.Tx, bucket string, from, through time.Time) (int, e
 	return sum, nil
 }
 
-// get net amounts of all buckets through a given date
-func SummarizeLedger(tx *sql.Tx, buckets []string, from, through time.Time) (map[string]int, error) {
+// get net amounts of all buckets over a given period of time
+func SummarizeBalance(tx *sql.Tx, buckets []string, from, through time.Time) (map[string]int, error) {
 	out := map[string]int{}
 	for _, b := range buckets {
 		val, err := SummarizeBucket(tx, b, from, through)
@@ -69,13 +69,13 @@ func SummarizeLedger(tx *sql.Tx, buckets []string, from, through time.Time) (map
 	return out, nil
 }
 
-func SummarizeLedgerOverTime(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
+func SummarizeBalanceOverTime(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
 	bigBang := utils.BigBang()
 	output := []map[string]int{}
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
-		l, err := SummarizeLedger(tx, buckets, bigBang, d)
+		l, err := SummarizeBalance(tx, buckets, bigBang, d)
 		if err != nil {
-			return nil, fmt.Errorf("ledger.SummarizeLedgerOverTime() summarizing ledger (%w)", err)
+			return nil, fmt.Errorf("ledger.SummarizeBalanceOverTime() summarizing ledger (%w)", err)
 		}
 		output = append(output, l)
 	}

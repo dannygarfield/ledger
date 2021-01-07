@@ -20,12 +20,10 @@ func TestGetLedger(t *testing.T) {
 				start,
 				100,
 			}
-
 			testutils.Tx(t, db, func(tx *sql.Tx) error {
 				err := ledger.InsertEntry(tx, input)
 				return err
 			})
-
 			want := []ledger.Entry{input}
 			var got []ledger.Entry
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
@@ -36,10 +34,10 @@ func TestGetLedger(t *testing.T) {
 		})
 }
 
-func TestSummarizeLedger(t *testing.T) {
+func TestSummarizeBalance(t *testing.T) {
 	db := testutils.Db(t)
 	bigBang := testutils.BigBang()
-	t.Run("one entry, summarize from beginning of time",
+	t.Run("one entry,",
 		func(t *testing.T) {
 			entryDate := time.Now()
 			entry := ledger.Entry{
@@ -58,7 +56,7 @@ func TestSummarizeLedger(t *testing.T) {
 				want := map[string]int{"savings": -100, "checking": 100}
 				var got map[string]int
 				testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-					got, err = ledger.SummarizeLedger(
+					got, err = ledger.SummarizeBalance(
 						tx,
 						[]string{"savings", "checking"},
 						bigBang,
@@ -73,7 +71,7 @@ func TestSummarizeLedger(t *testing.T) {
 				want := map[string]int{"savings": 0, "checking": 0}
 				var got map[string]int
 				testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-					got, err = ledger.SummarizeLedger(
+					got, err = ledger.SummarizeBalance(
 						tx,
 						[]string{"savings", "checking"},
 						bigBang,
@@ -116,34 +114,12 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 		}
 		var got []map[string]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-			got, err = ledger.SummarizeLedgerOverTime(
+			got, err = ledger.SummarizeBalanceOverTime(
 				tx,
 				[]string{bucket1, bucket2, bucket3},
 				start,
 				start.AddDate(0, 0, 3),
 			)
-			return err
-		})
-		assertEqual(t, want, got)
-	})
-}
-
-func TestGetBuckets(t *testing.T) {
-	db := testutils.Db(t)
-	t.Run("one transaction, two buckets", func(t *testing.T) {
-		input := ledger.Entry{
-			"savings",
-			"checking",
-			time.Date(2004, 8, 16, 0, 0, 0, 0, time.Local),
-			100,
-		}
-		testutils.Tx(t, db, func(tx *sql.Tx) error {
-			return ledger.InsertEntry(tx, input)
-		})
-		want := []string{"checking", "savings"}
-		var got []string
-		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-			got, err = ledger.GetBuckets(tx)
 			return err
 		})
 		assertEqual(t, want, got)
@@ -182,6 +158,28 @@ func TestMakePlot(t *testing.T) {
 			[][]int{{0, 100, -100}, {50, 50, -100}},
 		}
 		got := ledger.MakePlot(summary, start)
+		assertEqual(t, want, got)
+	})
+}
+
+func TestGetBuckets(t *testing.T) {
+	db := testutils.Db(t)
+	t.Run("one transaction, two buckets", func(t *testing.T) {
+		input := ledger.Entry{
+			"savings",
+			"checking",
+			time.Date(2004, 8, 16, 0, 0, 0, 0, time.Local),
+			100,
+		}
+		testutils.Tx(t, db, func(tx *sql.Tx) error {
+			return ledger.InsertEntry(tx, input)
+		})
+		want := []string{"checking", "savings"}
+		var got []string
+		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
+			got, err = ledger.GetBuckets(tx)
+			return err
+		})
 		assertEqual(t, want, got)
 	})
 }
