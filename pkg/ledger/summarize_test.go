@@ -197,7 +197,7 @@ func TestMakePlot(t *testing.T) {
 		summary := []map[string]int{}
 		start := time.Now()
 		want := &ledger.PlotData{}
-		got := ledger.MakePlot(summary, start)
+		got := ledger.MakePlot(summary, start, 1)
 		assertEqual(t, want, got)
 	})
 	t.Run("one entry", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestMakePlot(t *testing.T) {
 			[][]int{{100, -100}},
 		}
 
-		got := ledger.MakePlot(summary, start)
+		got := ledger.MakePlot(summary, start, 1)
 		assertEqual(t, want, got)
 	})
 	t.Run("two entries over two days", func(t *testing.T) {
@@ -223,7 +223,7 @@ func TestMakePlot(t *testing.T) {
 			[]string{startString, tomorrowString},
 			[][]int{{0, 100, -100}, {50, 50, -100}},
 		}
-		got := ledger.MakePlot(summary, start)
+		got := ledger.MakePlot(summary, start, 1)
 		assertEqual(t, want, got)
 	})
 }

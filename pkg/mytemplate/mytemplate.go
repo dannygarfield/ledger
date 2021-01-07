@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"ledger/pkg/ledger"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -55,7 +56,7 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// display the ledger over time, daily
+// display the ledger's net balances over time, daily
 func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
 	t, err := template.ParseFiles("pkg/mytemplate/dailybalance.html")
@@ -98,7 +99,74 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return fmt.Errorf("Calling ledger.GetBalanceOverTime (%v)", err)
 	}
-	plot := ledger.MakePlot(summary, start)
+	plot := ledger.MakePlot(summary, start, 1)
+	data := struct {
+		AllBuckets []string
+		Plot       ledger.PlotData
+	}{
+		allBuckets,
+		*plot,
+	}
+	// execute template
+	if err = t.Execute(w, data); err != nil {
+		return fmt.Errorf("Could not Execute template (%v)", err)
+	}
+	return nil
+}
+
+// display the ledger over time, grouped into a given interval period
+func LedgerSeriesHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+	// parse html template
+	t, err := template.ParseFiles("pkg/mytemplate/ledgerseries.html")
+	if err != nil {
+		return fmt.Errorf("Could not parse dailybalance.html (%v)", err)
+	}
+	// parse html form
+	r.ParseForm()
+	fmt.Println("PostForm:", r.PostForm)
+	formStart := r.PostForm["start"]
+	formEnd := r.PostForm["end"]
+	formBuckets := r.PostForm["buckets"]
+	formInterval := r.PostForm["interval"]
+	// set start date
+	start := time.Now().AddDate(0, -1, 0)
+	if len(formStart) > 0 && formStart[0] != "" {
+		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing start time (%v)", err)
+		}
+	}
+	// set end date
+	end := time.Now().AddDate(0, 1, 0)
+	if len(formEnd) > 0 && formEnd[0] != "" {
+		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
+		if err != nil {
+			return fmt.Errorf("Parsing end time (%v)", err)
+		}
+	}
+	// set interval
+	interval := 1
+	if len(formInterval) > 0 && formInterval[0] != "" {
+		interval, err = strconv.Atoi(formInterval[0])
+		if err != nil {
+			return fmt.Errorf("calling strconv.Atoi() (%v)", err)
+		}
+	}
+	// get all buckets
+	allBuckets, err := ledger.GetBuckets(tx)
+	if err != nil {
+		return fmt.Errorf("Calling ledger.GetBuckets() (%v)", err)
+	}
+	// if we don't get buckets from user input, show all buckets
+	if len(formBuckets) == 0 {
+		formBuckets = allBuckets
+	}
+	// get summary data and format for html
+	summary, err := ledger.SummarizeLedgerOverTime(tx, formBuckets, start, end, interval)
+	if err != nil {
+		return fmt.Errorf("Calling ledger.GetBalanceOverTime (%v)", err)
+	}
+	plot := ledger.MakePlot(summary, start, interval)
 	data := struct {
 		AllBuckets []string
 		Plot       ledger.PlotData

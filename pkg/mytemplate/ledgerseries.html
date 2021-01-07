@@ -1,3 +1,6 @@
+
+
+
 <!doctype html>
 {{ block "content" . }}
 <html lang="en">
@@ -29,12 +32,15 @@
             <li><a href="/ledgerseries">ledger over time</a></li>
         </ul>
 
-        <form action="/dailybalance" method="POST">
+        <form action="/ledgerseries" method="POST">
             <label for="start">start:</label>
             <input type="date" id="start" name="start">
 
             <label for="end">end:</label>
             <input type="date" id="end" name="end">
+
+            <label for="interval">interval (days):</label>
+            <input type="number" id="interval" name="interval">
 
             <label for="buckets">buckets:</label>
             <select id="buckets" name="buckets" multiple>

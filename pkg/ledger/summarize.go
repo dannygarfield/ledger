@@ -99,7 +99,7 @@ func SummarizeLedgerOverTime(tx *sql.Tx, buckets []string, start, end time.Time,
 	return output, nil
 }
 
-func MakePlot(summary []map[string]int, start time.Time) *PlotData {
+func MakePlot(summary []map[string]int, start time.Time, interval int) *PlotData {
 	output := &PlotData{}
 
 	if len(summary) > 0 {
@@ -109,7 +109,7 @@ func MakePlot(summary []map[string]int, start time.Time) *PlotData {
 		sort.Strings(output.BucketHeaders)
 
 		for i, day := range summary {
-			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i).Format("2006-01-02"))
+			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i*interval).Format("2006-01-02"))
 			row := []int{}
 			for _, b := range output.BucketHeaders {
 				row = append(row, day[b])
