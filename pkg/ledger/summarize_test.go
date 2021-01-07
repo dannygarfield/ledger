@@ -86,7 +86,7 @@ func TestSummarizeBalance(t *testing.T) {
 		})
 }
 
-func TestSummarizeBalanceOverTime(t *testing.T) {
+func TestGetBalanceOverTime(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("three buckets over three days, including a zero value bucket", func(t *testing.T) {
 		bucket1 := "our source bucket"
@@ -115,7 +115,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 		}
 		var got []map[string]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-			got, err = ledger.SummarizeBalanceOverTime(
+			got, err = ledger.GetBalanceOverTime(
 				tx,
 				[]string{bucket1, bucket2, bucket3},
 				start,
@@ -127,7 +127,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 	})
 }
 
-func TestSummarizeEntriesOverTime(t *testing.T) {
+func TestSummarizeLedgerOverTime(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("empty summary (zero entries)",
 		func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestSummarizeEntriesOverTime(t *testing.T) {
 			want := []map[string]int{}
 			var got []map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-				got, err = ledger.SummarizeEntriesOverTime(
+				got, err = ledger.SummarizeLedgerOverTime(
 					tx,
 					[]string{},
 					today,
@@ -147,7 +147,7 @@ func TestSummarizeEntriesOverTime(t *testing.T) {
 			assertEqual(t, want, got)
 		})
 
-	t.Run("two entries over two days",
+	t.Run("two entries over three days",
 		func(t *testing.T) {
 			start := time.Now()
 			end := start.AddDate(0, 0, 3)
@@ -179,7 +179,7 @@ func TestSummarizeEntriesOverTime(t *testing.T) {
 			}
 			var got []map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-				got, err = ledger.SummarizeEntriesOverTime(
+				got, err = ledger.SummarizeLedgerOverTime(
 					tx,
 					[]string{"checking", "savings"},
 					start,

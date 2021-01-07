@@ -94,9 +94,9 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 		formBuckets = allBuckets
 	}
 	// get summary data and format for html
-	summary, err := ledger.SummarizeBalanceOverTime(tx, formBuckets, start, end)
+	summary, err := ledger.GetBalanceOverTime(tx, formBuckets, start, end)
 	if err != nil {
-		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
+		return fmt.Errorf("Calling ledger.GetBalanceOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start)
 	data := struct {
