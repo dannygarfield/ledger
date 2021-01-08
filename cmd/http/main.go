@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"ledger/pkg/csvwriter"
+	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
 	"ledger/pkg/mytemplate"
 	"ledger/pkg/utils"
@@ -48,8 +48,8 @@ func (s *server) ledgerSeriesHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := csvwriter.UploadCsv(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling csvwriter.UploadCsv (%v)", err), http.StatusInternalServerError)
+		if err := csvreader.UploadCsv(tx, w, r); err != nil {
+			http.Error(w, fmt.Sprintf("Calling csvreader.UploadCsv (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
