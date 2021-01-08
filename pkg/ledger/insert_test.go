@@ -96,28 +96,3 @@ func testdb(t *testing.T) *sql.DB {
 	}
 	return db
 }
-
-func testtx(t *testing.T, db *sql.DB) *sql.Tx {
-	t.Helper()
-
-	tx, err := db.Begin()
-	if err != nil {
-		t.Fatalf("beginning sql transactions: %v", err)
-	}
-	return tx
-}
-
-func testcommit(t *testing.T, tx *sql.Tx) {
-	t.Helper()
-
-	if err := tx.Commit(); err != nil {
-		t.Fatalf("committing sql transaction: %v", err)
-	}
-}
-
-func assertNoError(t *testing.T, err error, msg string) {
-	t.Helper()
-	if err != nil {
-		t.Fatalf("%s: %v", msg, err)
-	}
-}
