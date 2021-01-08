@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"ledger/pkg/ledger"
 	"ledger/pkg/testutils"
-	"reflect"
 	"testing"
 	"time"
 )
@@ -36,7 +35,7 @@ func TestInsertEntry(t *testing.T) {
 					got, err = ledger.SummarizeBucket(tx, "savings", bigBang, entryDate)
 					return err
 				})
-				assertEqual(t, want, got)
+				testutils.AssertEqual(t, want, got)
 			}
 			// summarize ledger destination
 			{
@@ -46,7 +45,7 @@ func TestInsertEntry(t *testing.T) {
 					got, err = ledger.SummarizeBucket(tx, "checking", bigBang, entryDate)
 					return err
 				})
-				assertEqual(t, want, got)
+				testutils.AssertEqual(t, want, got)
 			}
 		})
 }
@@ -76,7 +75,7 @@ func TestInsertRepeatingEntry(t *testing.T) {
 				got, err = ledger.SummarizeBucket(tx, "savings", bigBang, entryDate.AddDate(2, 0, 0))
 				return err
 			})
-			assertEqual(t, want, got)
+			testutils.AssertEqual(t, want, got)
 		})
 }
 
@@ -120,12 +119,5 @@ func assertNoError(t *testing.T, err error, msg string) {
 	t.Helper()
 	if err != nil {
 		t.Fatalf("%s: %v", msg, err)
-	}
-}
-
-func assertEqual(t *testing.T, want, got interface{}) {
-	t.Helper()
-	if b := reflect.DeepEqual(want, got); !b {
-		t.Fatalf("want: %v, got: %v", want, got)
 	}
 }

@@ -31,7 +31,7 @@ func TestGetLedger(t *testing.T) {
 				got, err = ledger.GetLedger(tx, start, end)
 				return err
 			})
-			assertEqual(t, want, got)
+			testutils.AssertEqual(t, want, got)
 		})
 }
 
@@ -65,7 +65,7 @@ func TestSummarizeBalance(t *testing.T) {
 					)
 					return err
 				})
-				assertEqual(t, want, got)
+				testutils.AssertEqual(t, want, got)
 			}
 			// summarize before entryDate
 			{
@@ -80,7 +80,7 @@ func TestSummarizeBalance(t *testing.T) {
 					)
 					return err
 				})
-				assertEqual(t, want, got)
+				testutils.AssertEqual(t, want, got)
 			}
 
 		})
@@ -123,7 +123,7 @@ func TestGetBalanceOverTime(t *testing.T) {
 			)
 			return err
 		})
-		assertEqual(t, want, got)
+		testutils.AssertEqual(t, want, got)
 	})
 }
 
@@ -144,7 +144,7 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 				)
 				return err
 			})
-			assertEqual(t, want, got)
+			testutils.AssertEqual(t, want, got)
 		})
 
 	t.Run("two entries over three days",
@@ -188,7 +188,7 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 				)
 				return err
 			})
-			assertEqual(t, want, got)
+			testutils.AssertEqual(t, want, got)
 		})
 }
 
@@ -198,7 +198,7 @@ func TestMakePlot(t *testing.T) {
 		start := time.Now()
 		want := &ledger.PlotData{}
 		got := ledger.MakePlot(summary, start, 1)
-		assertEqual(t, want, got)
+		testutils.AssertEqual(t, want, got)
 	})
 	t.Run("one entry", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "checking": 100}}
@@ -211,7 +211,7 @@ func TestMakePlot(t *testing.T) {
 		}
 
 		got := ledger.MakePlot(summary, start, 1)
-		assertEqual(t, want, got)
+		testutils.AssertEqual(t, want, got)
 	})
 	t.Run("two entries over two days", func(t *testing.T) {
 		summary := []map[string]int{{"savings": -100, "IRA": 0, "checking": 100}, {"savings": -100, "IRA": 50, "checking": 50}}
@@ -224,7 +224,7 @@ func TestMakePlot(t *testing.T) {
 			[][]int{{0, 100, -100}, {50, 50, -100}},
 		}
 		got := ledger.MakePlot(summary, start, 1)
-		assertEqual(t, want, got)
+		testutils.AssertEqual(t, want, got)
 	})
 }
 
@@ -246,6 +246,6 @@ func TestGetBuckets(t *testing.T) {
 			got, err = ledger.GetBuckets(tx)
 			return err
 		})
-		assertEqual(t, want, got)
+		testutils.AssertEqual(t, want, got)
 	})
 }
