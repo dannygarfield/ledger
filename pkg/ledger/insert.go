@@ -81,11 +81,3 @@ func ParseDate(s string) (time.Time, error) {
 	}
 	return d, nil
 }
-
-// return a time with year, month, and day values; all other values equal 0
-func ConvertToDate(t time.Time) time.Time {
-	year := t.Year()
-	month := t.Month()
-	day := t.Day()
-	return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
-}

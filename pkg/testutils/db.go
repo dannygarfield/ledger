@@ -3,6 +3,7 @@ package testutils
 import (
 	"database/sql"
 	"io/ioutil"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -44,5 +45,12 @@ func Tx(t *testing.T, db *sql.DB, work func(tx *sql.Tx) error) {
 	}
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("committing tx: %v", err)
+	}
+}
+
+func AssertEqual(t *testing.T, want, got interface{}) {
+	t.Helper()
+	if equal := reflect.DeepEqual(want, got); !equal {
+		t.Fatalf("want: %v, got: %v", want, got)
 	}
 }

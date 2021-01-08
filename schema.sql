@@ -4,3 +4,10 @@ CREATE TABLE IF NOT EXISTS entries
 , happened_at TEXT
 , amount TEXT
 );
+
+CREATE TABLE IF NOT EXISTS budget_entries
+(happened_at TEXT
+, amount INT
+, category TEXT
+, description TEXT
+);
