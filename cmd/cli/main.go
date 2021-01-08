@@ -47,7 +47,7 @@ func main() {
 		return
 	} else if *insertMode && *csvMode {
 		// insert entries from a csv
-		entries, err := csvreader.CsvToEntries(*filepath)
+		entries, err := csvreader.CsvToLedgerEntries(*filepath)
 		if err != nil {
 			log.Fatalf("Reading csv")
 		}

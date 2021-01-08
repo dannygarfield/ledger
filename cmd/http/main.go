@@ -46,11 +46,27 @@ func (s *server) ledgerSeriesHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) uploadCsvToLedgerHandler(w http.ResponseWriter, r *http.Request) {
+	// create tempfile and return filepath: CreateTempFile()
+	filepath, err := csvreader.CreateTempFile(r)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Calling csvreader.CreateTempFile() (%v)", err), http.StatusInternalServerError)
+		return
+	}
+	// create ledger entries from file: CsvToLedgerEntries()
+	entries, err := csvreader.CsvToLedgerEntries(filepath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Calling csvreader.CsvToLedgerEntries() (%v)", err), http.StatusInternalServerError)
+		return
+	}
+	// insert entries
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := csvreader.UploadCsv(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling csvreader.UploadCsv (%v)", err), http.StatusInternalServerError)
-			return err
+		for _, e := range entries {
+			err := ledger.InsertEntry(tx, e)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Calling ledger.InsertEntry (%v)", err), http.StatusInternalServerError)
+				return err
+			}
 		}
 		return nil
 	})
@@ -87,7 +103,7 @@ func main() {
 	http.HandleFunc("/dailybalance", s.dailyBalanceHandler)
 	http.HandleFunc("/ledgerseries", s.ledgerSeriesHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
-	http.HandleFunc("/upload_entries_csv", s.uploadCsvHandler)
+	http.HandleFunc("/upload_ledger_entries_csv", s.uploadCsvToLedgerHandler)
 	http.HandleFunc("/upload_entry", s.uploadEntryHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))

@@ -1,7 +1,6 @@
 package csvreader
 
 import (
-	"database/sql"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -23,8 +22,8 @@ func csvReader(filepath string) (*csv.Reader, error) {
 	return reader, nil
 }
 
-// convert a CSV to a slice of entries
-func CsvToEntries(filepath string) ([]ledger.Entry, error) {
+// convert a CSV to a slice of ledger entries
+func CsvToLedgerEntries(filepath string) ([]ledger.Entry, error) {
 	// create the reader
 	reader, err := csvReader(filepath)
 	if err != nil {
@@ -72,41 +71,26 @@ func CsvToEntries(filepath string) ([]ledger.Entry, error) {
 	return entries, nil
 }
 
-func UploadCsv(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
-
+func CreateTempFile(r *http.Request) (string, error) {
 	r.ParseMultipartForm(10 << 20) // max 10mb files
 
 	// retrieve file from posted form-data
 	file, _, err := r.FormFile("user_csv")
 	if err != nil {
-		return fmt.Errorf("Error retrieving file from form-data (%v)", err)
+		return "", fmt.Errorf("Error retrieving file from form-data (%v)", err)
 	}
 	defer file.Close()
 
 	//  write temporary file
 	tempFile, err := ioutil.TempFile("tempcsv", "upload-*.csv")
 	if err != nil {
-		return fmt.Errorf("Error error writing temp file (%v)", err)
+		return "", fmt.Errorf("Error error writing temp file (%v)", err)
 	}
 	defer tempFile.Close()
 	fileContent, err := ioutil.ReadAll(file)
 	if err != nil {
-		return fmt.Errorf("Error copying data to tempfile (%v)", err)
+		return "", fmt.Errorf("Error copying data to tempfile (%v)", err)
 	}
 	tempFile.Write(fileContent)
-	filepath := tempFile.Name()
-
-	// convert to entries
-	entries, err := CsvToEntries(filepath)
-	if err != nil {
-		return fmt.Errorf("Calling csvreader.CsvToEntries() (%v)", err)
-	}
-
-	for _, e := range entries {
-		err := ledger.InsertEntry(tx, e)
-		if err != nil {
-			return fmt.Errorf("Calling ledger.InsertEntry (%v)", err)
-		}
-	}
-	return nil
+	return tempFile.Name(), nil
 }
