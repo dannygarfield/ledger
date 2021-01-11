@@ -5,7 +5,7 @@
 {{ block "content" . }}
 <html lang="en">
     <head>
-        <title>ledger | daily balance</title>
+        <title>ledger | balance</title>
         <style>
             body, form, label, input, option {
                 font-size: 14px;
@@ -28,7 +28,7 @@
         <ul>
             <li><a href="/insert">insert</a></li>
             <li><a href="/ledger">ledger</a></li>
-            <li><a href="/dailybalance">daily balance</a></li>
+            <li><a href="/balance">balance</a></li>
             <li><a href="/ledgerseries">ledger over time</a></li>
         </ul>
 
@@ -53,7 +53,7 @@
         </form>
 
         {{ $dates := .Plot.DateHeaders }}
-        <h1>Daily Balance</h1>
+        <h1>balance</h1>
         <table>
             <tr>
                 <th></th>

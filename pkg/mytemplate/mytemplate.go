@@ -11,7 +11,7 @@ import (
 )
 
 // display a ledger on a single day
-func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+func Ledger(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
 	t, err := template.ParseFiles("pkg/mytemplate/ledger.html")
 	if err != nil {
@@ -57,11 +57,11 @@ func LedgerHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 }
 
 // display the ledger's net balances over time, daily
-func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+func BalanceOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
-	t, err := template.ParseFiles("pkg/mytemplate/dailybalance.html")
+	t, err := template.ParseFiles("pkg/mytemplate/balance.html")
 	if err != nil {
-		return fmt.Errorf("Could not parse dailybalance.html (%v)", err)
+		return fmt.Errorf("Could not parse balance.html (%v)", err)
 	}
 	// parse html form
 	r.ParseForm()
@@ -114,11 +114,11 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 }
 
 // display the ledger over time, grouped into a given interval period
-func LedgerOverTimeHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+func LedgerOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
 	t, err := template.ParseFiles("pkg/mytemplate/ledgerseries.html")
 	if err != nil {
-		return fmt.Errorf("Could not parse dailybalance.html (%v)", err)
+		return fmt.Errorf("Could not parse balance.html (%v)", err)
 	}
 	// parse html form
 	r.ParseForm()
