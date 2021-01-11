@@ -35,10 +35,17 @@
           <input type="submit" value="Submit">
         </form>
 
-        <h1>Insert entries by CSV</h1>
-        <form action="/upload_ledger_entries_csv" enctype="multipart/form-data" method="POST">
-            <label for="user_csv">Choose a CSV:</label>
-            <input type="file" id="user_csv" name="user_csv"><br><br>
+        <h1>insert entries by CSV</h1>
+        <form action="/upload_csv" enctype="multipart/form-data" method="POST">
+            <label for="user_csv">choose a CSV:</label>
+            <input type="file" id="user_csv" name="user_csv">
+            <br><br>
+            <label for="entry_type">entry type:</label>
+            <select id="entry_type" name="entry_type">
+                <option value="ledger">ledger</option>
+                <option value="budget">budget</option>
+            </select>
+            <br><br>
             <input type="submit" value="Submit">
         </form>
     </body>

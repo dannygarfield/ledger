@@ -65,7 +65,6 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 	}
 	// parse html form
 	r.ParseForm()
-	fmt.Println("PostForm:", r.PostForm)
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]
 	formBuckets := r.PostForm["buckets"]
@@ -95,9 +94,9 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 		formBuckets = allBuckets
 	}
 	// get summary data and format for html
-	summary, err := ledger.GetBalanceOverTime(tx, formBuckets, start, end)
+	summary, err := ledger.SummarizeBalanceOverTime(tx, formBuckets, start, end)
 	if err != nil {
-		return fmt.Errorf("Calling ledger.GetBalanceOverTime (%v)", err)
+		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start, 1)
 	data := struct {
@@ -115,7 +114,7 @@ func DailyBalanceHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 }
 
 // display the ledger over time, grouped into a given interval period
-func LedgerSeriesHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
+func LedgerOverTimeHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	// parse html template
 	t, err := template.ParseFiles("pkg/mytemplate/ledgerseries.html")
 	if err != nil {
@@ -123,7 +122,6 @@ func LedgerSeriesHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 	}
 	// parse html form
 	r.ParseForm()
-	fmt.Println("PostForm:", r.PostForm)
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]
 	formBuckets := r.PostForm["buckets"]
@@ -164,7 +162,7 @@ func LedgerSeriesHandler(tx *sql.Tx, w http.ResponseWriter, r *http.Request) err
 	// get summary data and format for html
 	summary, err := ledger.SummarizeLedgerOverTime(tx, formBuckets, start, end, interval)
 	if err != nil {
-		return fmt.Errorf("Calling ledger.GetBalanceOverTime (%v)", err)
+		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
 	}
 	plot := ledger.MakePlot(summary, start, interval)
 	data := struct {

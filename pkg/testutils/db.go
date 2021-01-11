@@ -9,7 +9,15 @@ import (
 )
 
 func BigBang() time.Time {
-	return time.Date(1996, 04, 11, 0, 0, 0, 0, time.Local)
+	return time.Date(1996, 04, 11, 0, 0, 0, 0, time.UTC)
+}
+
+func JanOne() time.Time {
+	return time.Date(2021, 01, 01, 0, 0, 0, 0, time.UTC)
+}
+
+func JanTwo() time.Time {
+	return time.Date(2021, 01, 02, 0, 0, 0, 0, time.UTC)
 }
 
 func Db(t *testing.T) *sql.DB {
@@ -19,7 +27,7 @@ func Db(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("opening database: %v", err)
 	}
-	schema, err := ioutil.ReadFile("../../schema.sql")
+	schema, err := ioutil.ReadFile("../../pkg/testutils/testdata/schema.sql")
 	if err != nil {
 		t.Fatalf("opening schema file: %v", err)
 	}

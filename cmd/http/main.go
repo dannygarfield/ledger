@@ -36,9 +36,9 @@ func (s *server) dailyBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) ledgerSeriesHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) ledgerOverTimeHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := mytemplate.LedgerSeriesHandler(tx, w, r); err != nil {
+		if err := mytemplate.LedgerOverTimeHandler(tx, w, r); err != nil {
 			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerSeriesHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}

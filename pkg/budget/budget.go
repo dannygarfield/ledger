@@ -19,8 +19,9 @@ type Entry struct {
 func InsertEntry(tx *sql.Tx, e Entry) error {
 	q := `INSERT INTO budget_entries
 		(happened_at, amount, category, description)
-		VALUES ($1, $2, $3, $4);`
+		VALUES (date($1), $2, $3, $4);`
 	happened_at := utils.ConvertToDate(e.EntryDate)
+	fmt.Println("happened_at:", happened_at)
 	_, err := tx.Exec(q, happened_at, e.Amount, e.Category, e.Description)
 	if err != nil {
 		return fmt.Errorf("calling budget.InsertEntry() (%w)", err)
@@ -45,10 +46,26 @@ func GetBudgetEntries(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 		if err := rows.Scan(&datestring, &e.Amount, &e.Category, &e.Description); err != nil {
 			return nil, err
 		}
-		if e.EntryDate, err = time.Parse("2006-01-02 15:04:05-07:00", datestring); err != nil {
+		fmt.Println("parsing e.EntryDate")
+		if e.EntryDate, err = time.Parse("2006-01-02", datestring); err != nil {
 			return nil, err
 		}
+		fmt.Println("parsed e.EntryDate")
 		budget = append(budget, e)
 	}
 	return budget, nil
+}
+
+func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (int, error) {
+	q := `SELECT COALESCE(sum(amount), 0)
+		FROM budget_entries
+		WHERE category = $1
+		AND
+		date(happened_at) BETWEEN date($2) AND date($3)`
+	row := tx.QueryRow(q, category, start, end)
+	var sum int
+	if err := row.Scan(&sum); err != nil {
+		return -1, fmt.Errorf("calling row.Scan() (%w)", err)
+	}
+	return sum, nil
 }

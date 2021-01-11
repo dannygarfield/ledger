@@ -86,7 +86,7 @@ func TestSummarizeBalance(t *testing.T) {
 		})
 }
 
-func TestGetBalanceOverTime(t *testing.T) {
+func TestSummarizeBalanceOverTime(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("three buckets over three days, including a zero value bucket", func(t *testing.T) {
 		bucket1 := "our source bucket"
@@ -115,7 +115,7 @@ func TestGetBalanceOverTime(t *testing.T) {
 		}
 		var got []map[string]int
 		testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-			got, err = ledger.GetBalanceOverTime(
+			got, err = ledger.SummarizeBalanceOverTime(
 				tx,
 				[]string{bucket1, bucket2, bucket3},
 				start,

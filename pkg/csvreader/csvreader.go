@@ -72,9 +72,8 @@ func CsvToLedgerEntries(filepath string) ([]ledger.Entry, error) {
 }
 
 func CreateTempFile(r *http.Request) (string, error) {
-	r.ParseMultipartForm(10 << 20) // max 10mb files
-
 	// retrieve file from posted form-data
+	// expects server has already called r.ParseMultipartForm()
 	file, _, err := r.FormFile("user_csv")
 	if err != nil {
 		return "", fmt.Errorf("Error retrieving file from form-data (%v)", err)
