@@ -176,7 +176,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category with no entries",
 		func(t *testing.T) {
 			want := map[string]int{"home": 0}
@@ -190,7 +190,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category with no entries in time period",
 		func(t *testing.T) {
 			want := map[string]int{"groceries": 0}
@@ -204,7 +204,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("two categories with no entries",
 		func(t *testing.T) {
 			want := map[string]int{"home": 0, "utilities": 0}
@@ -218,7 +218,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category with one entry on one day",
 		func(t *testing.T) {
 			want := map[string]int{"groceries": 100}
@@ -232,7 +232,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category with two entries over two days",
 		func(t *testing.T) {
 			want := map[string]int{"groceries": 300}
@@ -246,7 +246,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("multiple entries over multiple days",
 		func(t *testing.T) {
 			want := map[string]int{"groceries": 300, "rent": 3000}
@@ -260,7 +260,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("three categories",
 		func(t *testing.T) {
 			want := map[string]int{"groceries": 200, "home": 0, "rent": 0}
@@ -274,7 +274,7 @@ func TestSummarizeCategories(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 }
 
 func TestSummarizeSpendsOverTime(t *testing.T) {
@@ -296,7 +296,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("empty, one category given, over one day",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -314,7 +314,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("empty, two categories given, over one day",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -332,7 +332,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("empty, two categories given, over two days",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -351,7 +351,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("empty, two categories given, over two days",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -370,7 +370,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category given, over one day",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -388,7 +388,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("two categories given, over two days",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -407,7 +407,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("one category over two days, skip by two",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -425,7 +425,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("two categories over two days, skip by two",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -443,7 +443,7 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 	t.Run("two categories over five days, skip by two",
 		func(t *testing.T) {
 			want := []map[string]int{
@@ -463,6 +463,6 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
-	})
+		})
 
 }

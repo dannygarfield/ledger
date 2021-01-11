@@ -2,7 +2,6 @@ package ledger_test
 
 import (
 	"database/sql"
-	"fmt"
 	"ledger/pkg/ledger"
 	"ledger/pkg/testutils"
 	"testing"
@@ -119,7 +118,7 @@ func TestSummarizeBalanceOverTime(t *testing.T) {
 				tx,
 				[]string{bucket1, bucket2, bucket3},
 				start,
-				start.AddDate(0, 0, 3),
+				start.AddDate(0, 0, 2),
 			)
 			return err
 		})
@@ -132,7 +131,7 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 	t.Run("empty summary (zero entries)",
 		func(t *testing.T) {
 			today := time.Now()
-			want := []map[string]int{}
+			want := []map[string]int{{}}
 			var got []map[string]int
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = ledger.SummarizeLedgerOverTime(
@@ -149,7 +148,7 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 	t.Run("two entries over three days",
 		func(t *testing.T) {
 			start := time.Now()
-			end := start.AddDate(0, 0, 3)
+			end := start.AddDate(0, 0, 2)
 			entry := ledger.Entry{
 				Source:      "savings",
 				Destination: "checking",
@@ -158,9 +157,7 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 			}
 			// insert entries
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
-				fmt.Println("END:", end)
 				for i := 0; i < 2; i++ {
-					fmt.Println("ENTRY DATE:", entry.EntryDate)
 					err := ledger.InsertEntry(tx, entry)
 					if err != nil {
 						return err
