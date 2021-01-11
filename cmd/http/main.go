@@ -39,37 +39,44 @@ func (s *server) dailyBalanceHandler(w http.ResponseWriter, r *http.Request) {
 func (s *server) ledgerOverTimeHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		if err := mytemplate.LedgerOverTimeHandler(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerSeriesHandler (%v)", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Calling mytemplate.LedgerOverTimeHandler (%v)", err), http.StatusInternalServerError)
 			return err
 		}
 		return nil
 	})
 }
 
-func (s *server) uploadCsvToLedgerHandler(w http.ResponseWriter, r *http.Request) {
-	// create tempfile and return filepath: CreateTempFile()
+func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(10 << 20) // max upload 10mb
+	// create tempfile and return filepath
 	filepath, err := csvreader.CreateTempFile(r)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Calling csvreader.CreateTempFile() (%v)", err), http.StatusInternalServerError)
 		return
 	}
-	// create ledger entries from file: CsvToLedgerEntries()
-	entries, err := csvreader.CsvToLedgerEntries(filepath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Calling csvreader.CsvToLedgerEntries() (%v)", err), http.StatusInternalServerError)
-		return
-	}
-	// insert entries
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		for _, e := range entries {
-			err := ledger.InsertEntry(tx, e)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Calling ledger.InsertEntry (%v)", err), http.StatusInternalServerError)
-				return err
-			}
+	// call ledger or budget uploader
+	if len(r.PostForm["entry_type"]) > 0 && r.PostForm["entry_type"][0] == "ledger" {
+		fmt.Println("uploading ledger entries")
+		// convert csv to ledger entries
+		entries, err := csvreader.CsvToLedgerEntries(filepath)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Calling csvreader.CsvToLedgerEntries() (%v)", err), http.StatusInternalServerError)
+			return
 		}
-		return nil
-	})
+		// insert entries
+		utils.Tx(s.db, r, func(tx *sql.Tx) error {
+			for _, e := range entries {
+				err := ledger.InsertEntry(tx, e)
+				if err != nil {
+					http.Error(w, fmt.Sprintf("Calling ledger.InsertEntry (%v)", err), http.StatusInternalServerError)
+					return err
+				}
+			}
+			return nil
+		})
+	} else {
+		fmt.Println("uploading budget entries ... to come")
+	}
 	mytemplate.Insert(w, r)
 }
 
@@ -101,9 +108,9 @@ func main() {
 
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/dailybalance", s.dailyBalanceHandler)
-	http.HandleFunc("/ledgerseries", s.ledgerSeriesHandler)
+	http.HandleFunc("/ledgerseries", s.ledgerOverTimeHandler)
 	http.HandleFunc("/insert", mytemplate.Insert)
-	http.HandleFunc("/upload_ledger_entries_csv", s.uploadCsvToLedgerHandler)
+	http.HandleFunc("/upload_csv", s.uploadCsvHandler)
 	http.HandleFunc("/upload_entry", s.uploadEntryHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
