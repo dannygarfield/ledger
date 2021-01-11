@@ -29,6 +29,7 @@ func InsertEntry(tx *sql.Tx, e Entry) error {
 	return nil
 }
 
+// get all entries from budget in given time period
 func GetBudgetEntries(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 	q := `SELECT * FROM budget_entries
 		WHERE date(happened_at) BETWEEN date($1) AND date($2)
@@ -46,16 +47,15 @@ func GetBudgetEntries(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 		if err := rows.Scan(&datestring, &e.Amount, &e.Category, &e.Description); err != nil {
 			return nil, err
 		}
-		fmt.Println("parsing e.EntryDate")
 		if e.EntryDate, err = time.Parse("2006-01-02", datestring); err != nil {
 			return nil, err
 		}
-		fmt.Println("parsed e.EntryDate")
 		budget = append(budget, e)
 	}
 	return budget, nil
 }
 
+// get net spend of category from start through end
 func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (int, error) {
 	q := `SELECT COALESCE(sum(amount), 0)
 		FROM budget_entries
@@ -68,4 +68,34 @@ func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (int, 
 		return -1, fmt.Errorf("calling row.Scan() (%w)", err)
 	}
 	return sum, nil
+}
+
+// get net spend of categories from start through end
+func SummarizeCategories(tx *sql.Tx, categories []string, from, through time.Time) (map[string]int, error) {
+	output := map[string]int{}
+	for _, c := range categories {
+		val, err := SummarizeCategory(tx, c, from, through)
+		if err != nil {
+			return nil, fmt.Errorf("calling SummarizeCategory() (%v)", err)
+		}
+		output[c] = val
+	}
+	return output, nil
+}
+
+func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Time, interval int) ([]map[string]int, error) {
+	output := []map[string]int{}
+	fmt.Println("start before end:", start.Before(end))
+	for d := start; d.Before(end.AddDate(0, 0, 1)); d = d.AddDate(0, 0, interval) {
+		// summarize from the start to end of an interval period
+		fmt.Println("beginning")
+		c, err := SummarizeCategories(tx, categories, d, d.AddDate(0, 0, interval-1))
+		fmt.Println("c:", c)
+		if err != nil {
+			return nil, fmt.Errorf("calling SummarizeCategories() (%w)", err)
+		}
+		output = append(output, c)
+		fmt.Println("output:", output)
+	}
+	return output, nil
 }

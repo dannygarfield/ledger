@@ -146,7 +146,6 @@ func TestSummarizeLedgerOverTime(t *testing.T) {
 			})
 			testutils.AssertEqual(t, want, got)
 		})
-
 	t.Run("two entries over three days",
 		func(t *testing.T) {
 			start := time.Now()

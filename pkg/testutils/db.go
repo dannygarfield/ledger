@@ -12,6 +12,10 @@ func BigBang() time.Time {
 	return time.Date(1996, 04, 11, 0, 0, 0, 0, time.UTC)
 }
 
+func Dec31() time.Time {
+	return time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC)
+}
+
 func JanOne() time.Time {
 	return time.Date(2021, 01, 01, 0, 0, 0, 0, time.UTC)
 }

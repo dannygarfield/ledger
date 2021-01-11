@@ -59,15 +59,15 @@ func SummarizeBucket(tx *sql.Tx, bucket string, start, end time.Time) (int, erro
 
 // get net amounts of provided buckets over a given time
 func SummarizeBalance(tx *sql.Tx, buckets []string, from, through time.Time) (map[string]int, error) {
-	out := map[string]int{}
+	output := map[string]int{}
 	for _, b := range buckets {
 		val, err := SummarizeBucket(tx, b, from, through)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("calling SummarizeCategory() (%v)", err)
 		}
-		out[b] = val
+		output[b] = val
 	}
-	return out, nil
+	return output, nil
 }
 
 // get daily balances (starting from bigBang) of provided buckets over a given time
