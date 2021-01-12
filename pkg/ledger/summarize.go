@@ -128,7 +128,6 @@ func GetBuckets(tx *sql.Tx) ([]string, error) {
 		    SELECT destination AS buckets FROM entries
 		) ORDER BY buckets
 	;`
-
 	rows, err := tx.Query(q)
 	if err != nil {
 		return nil, err
@@ -143,5 +142,4 @@ func GetBuckets(tx *sql.Tx) ([]string, error) {
 		buckets = append(buckets, b)
 	}
 	return buckets, nil
-
 }

@@ -72,12 +72,3 @@ func PrepareEntryForInsert(r *http.Request) (Entry, error) {
 	}
 	return entry, nil
 }
-
-// parse a date
-func ParseDate(s string) (time.Time, error) {
-	d, err := time.Parse("2006-01-02", s)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("parseDate() - parsing time: %w", err)
-	}
-	return d, nil
-}

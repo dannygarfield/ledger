@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"ledger/pkg/utils"
+	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -21,7 +23,6 @@ func InsertEntry(tx *sql.Tx, e Entry) error {
 		(happened_at, amount, category, description)
 		VALUES (date($1), $2, $3, $4);`
 	happened_at := utils.ConvertToDate(e.EntryDate)
-	fmt.Println("happened_at:", happened_at)
 	_, err := tx.Exec(q, happened_at, e.Amount, e.Category, e.Description)
 	if err != nil {
 		return fmt.Errorf("calling budget.InsertEntry() (%w)", err)
@@ -98,4 +99,41 @@ func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Ti
 		fmt.Println("output:", output)
 	}
 	return output, nil
+}
+
+func PrepareEntryForInsert(r *http.Request) (Entry, error) {
+	r.ParseForm()
+	entrydate, err := time.Parse("2006-01-02", r.PostForm["happened_at"][0])
+	if err != nil {
+		return Entry{}, fmt.Errorf("Could not parse entrydate (%v)", err)
+	}
+	amount, err := strconv.Atoi(r.PostForm["amount"][0])
+	if err != nil {
+		return Entry{}, fmt.Errorf("Could not convert amount field to int (%v)", err)
+	}
+	entry := Entry{
+		EntryDate:   entrydate,
+		Amount:      amount,
+		Category:    r.PostForm["category"][0],
+		Description: r.PostForm["description"][0],
+	}
+	return entry, nil
+}
+
+func GetCategories(tx *sql.Tx) ([]string, error) {
+	q := `SELECT DISTINCT category FROM budget_entries ORDER BY category;`
+	rows, err := tx.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	categories := []string{}
+	for rows.Next() {
+		var c string
+		if err := rows.Scan(&c); err != nil {
+			return nil, err
+		}
+		categories = append(categories, c)
+	}
+	return categories, nil
 }

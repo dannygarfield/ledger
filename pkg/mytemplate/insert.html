@@ -19,8 +19,8 @@
             <li><a href="/balance">balance</a></li>
             <li><a href="/ledgerseries">ledger over time</a></li>
         </ul>
-        <h1>Insert an entry</h1>
-        <form action="/upload_entry" method="POST">
+        <h1>Insert a ledger entry</h1>
+        <form action="/insert_ledger_entry" method="POST">
           <label for="source">source:</label><br>
           <input type="text" id="source" name="source" value=""><br>
 
@@ -32,6 +32,23 @@
 
           <label for="amount">amount:</label><br>
           <input type="text" id="amount" name="amount" value=""><br><br>
+
+          <input type="submit" value="Submit">
+        </form>
+
+        <h1>Insert a budget entry</h1>
+        <form action="/insert_budget_entry" method="POST">
+            <label for="happened_at">happened_at:</label><br>
+            <input type="text" id="happened_at" name="happened_at" value=""><br>
+
+            <label for="amount">amount:</label><br>
+            <input type="text" id="amount" name="amount" value=""><br>
+
+            <label for="category">category:</label><br>
+            <input type="text" id="category" name="category" value=""><br>
+
+            <label for="description">description:</label><br>
+            <input type="text" id="description" name="description" value=""><br><br>
 
           <input type="submit" value="Submit">
         </form>
@@ -49,6 +66,7 @@
             <br><br>
             <input type="submit" value="Submit">
         </form>
+
     </body>
 </html>
 {{ end }}

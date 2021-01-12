@@ -38,3 +38,12 @@ func ConvertToDate(t time.Time) time.Time {
 	day := t.Day()
 	return time.Date(year, month, day, 0, 0, 0, 0, time.Local)
 }
+
+// parse a date
+func ParseDate(s string) (time.Time, error) {
+	d, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parseDate() - parsing time: %w", err)
+	}
+	return d, nil
+}

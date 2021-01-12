@@ -5,6 +5,7 @@ import (
 	"flag"
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
+	"ledger/pkg/utils"
 	"log"
 	"time"
 )
@@ -68,7 +69,7 @@ func main() {
 		}
 	} else if *insertMode && *repeat != "" {
 		// insert entry that repeats through 2 years from today
-		d, err := ledger.ParseDate(*entrydate)
+		d, err := utils.ParseDate(*entrydate)
 		if err != nil {
 			log.Print(err)
 			return
@@ -91,7 +92,7 @@ func main() {
 		}
 	} else if *insertMode {
 		// insert a transaction to the db
-		d, err := ledger.ParseDate(*entrydate)
+		d, err := utils.ParseDate(*entrydate)
 		if err != nil {
 			log.Print(err)
 			return
@@ -117,7 +118,7 @@ func main() {
 		// summarize all buckets through a given date
 		td := time.Now()
 		if *through != "" {
-			td, err = ledger.ParseDate(*through)
+			td, err = utils.ParseDate(*through)
 			if err != nil {
 				log.Print(err)
 				return

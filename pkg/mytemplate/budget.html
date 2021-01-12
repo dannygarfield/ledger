@@ -1,0 +1,55 @@
+{{ block "content" . }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>budget</title>
+        <style>
+            body {
+                font-size: 14px;
+                color: #777777;
+                font-family: Verdana;
+            }
+            table, th, td {
+                border: 1px solid #888888;
+                border-collapse: collapse;
+                padding: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Menu</h1>
+        <ul>
+            <li><a href="/insert">insert</a></li>
+            <li><a href="/budget">budget</a></li>
+            <li><a href="/balance">balance</a></li>
+            <li><a href="/ledgerovertime">ledger over time</a></li>
+        </ul>
+        <h1>budget</h1>
+        <p>From <b>{{ .Start }}</b> until <b>{{ .End }}</b><p>
+        <form action="/budget" method="POST">
+            <label for="start">start:</label>
+            <input type="date" id="start" name="start">
+            <label for="end">end:</label>
+            <input type="date" id="end" name="end">
+            <input type="submit" value="Submit">
+        </form>
+        <table>
+            <tr>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Entry Date</th>
+                <th>Amount</th>
+            </tr>
+            {{ range .Budget }}
+            <tr>
+                <td>{{ .EntryDate }}</td>
+                <td>{{ .Amount }}</td>
+                <td>{{ .Category }}</td>
+                <td>{{ .Description }}</td>
+            </tr>
+            {{ end }}
+        <table>
+
+    </body>
+</html>
+{{ end }}
