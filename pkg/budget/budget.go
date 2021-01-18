@@ -133,3 +133,37 @@ func GetCategories(tx *sql.Tx) ([]string, error) {
 	}
 	return categories, nil
 }
+
+func GetEarliestBudgetDate(tx *sql.Tx) (time.Time, error) {
+	q := `SELECT happened_at
+		FROM budget_entries
+		ORDER BY happened_at ASC
+		LIMIT 1;`
+	row := tx.QueryRow(q)
+	var datestring string
+	if err := row.Scan(&datestring); err != nil {
+		return utils.BigBang, fmt.Errorf("GetEarliestBudgetDate() - querying rows: %w", err)
+	}
+	entrydate, err := utils.ParseDate(datestring)
+	if err != nil {
+		return utils.BigBang, fmt.Errorf("Calling utils.ParseDate() (%w)", err)
+	}
+	return entrydate, nil
+}
+
+func GetLatestBudgetDate(tx *sql.Tx) (time.Time, error) {
+	q := `SELECT happened_at
+		FROM budget_entries
+		ORDER BY happened_at DESC
+		LIMIT 1;`
+	row := tx.QueryRow(q)
+	var datestring string
+	if err := row.Scan(&datestring); err != nil {
+		return utils.BigBang, fmt.Errorf("GetEarliestBudgetDate() - querying rows: %w", err)
+	}
+	entrydate, err := utils.ParseDate(datestring)
+	if err != nil {
+		return utils.BigBang, fmt.Errorf("Calling utils.ParseDate() (%w)", err)
+	}
+	return entrydate, nil
+}

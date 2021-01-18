@@ -192,7 +192,10 @@ func Budget(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]
 	// set start date
-	start := time.Now().AddDate(0, -1, 0)
+	start, err := budget.GetEarliestBudgetDate(tx)
+	if err != nil {
+		return fmt.Errorf("Calling budget.GetEarliestBudgetDate() (%v)", err)
+	}
 	if len(formStart) > 0 && formStart[0] != "" {
 		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
 		if err != nil {
@@ -200,7 +203,10 @@ func Budget(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	// set end date
-	end := time.Now().AddDate(0, 1, 0)
+	end, err := budget.GetLatestBudgetDate(tx)
+	if err != nil {
+		return fmt.Errorf("Calling budget.GetLatestBudgetDate() (%v)", err)
+	}
 	if len(formEnd) > 0 && formEnd[0] != "" {
 		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
 		if err != nil {
@@ -240,7 +246,10 @@ func BudgetOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	formCategories := r.PostForm["categories"]
 	formInterval := r.PostForm["interval"]
 	// set start date
-	start := time.Now().AddDate(0, -1, 0)
+	start, err := budget.GetEarliestBudgetDate(tx)
+	if err != nil {
+		return fmt.Errorf("Calling budget.GetEarliestBudgetDate() (%v)", err)
+	}
 	if len(formStart) > 0 && formStart[0] != "" {
 		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
 		if err != nil {
@@ -248,7 +257,10 @@ func BudgetOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	// set end date
-	end := time.Now().AddDate(0, 1, 0)
+	end, err := budget.GetLatestBudgetDate(tx)
+	if err != nil {
+		return fmt.Errorf("Calling budget.GetLatestBudgetDate() (%v)", err)
+	}
 	if len(formEnd) > 0 && formEnd[0] != "" {
 		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
 		if err != nil {
@@ -256,7 +268,7 @@ func BudgetOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 	// set interval
-	interval := 1
+	interval := 7
 	if len(formInterval) > 0 && formInterval[0] != "" {
 		interval, err = strconv.Atoi(formInterval[0])
 		if err != nil {
