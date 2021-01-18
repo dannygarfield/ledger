@@ -20,6 +20,7 @@
             select {
                 vertical-align: top;
                 min-width: 100px;
+                min-height: 200px;
             }
         </style>
     </head>
@@ -30,8 +31,9 @@
             <li><a href="/ledger">ledger</a></li>
             <li><a href="/balance">balance</a></li>
             <li><a href="/ledgerseries">ledger over time</a></li>
+            <li><a href="/budget">budget</a></li>
+            <li><a href="/budgetseries">budget over time</a></li>
         </ul>
-
         <form action="/budgetseries" method="POST">
             <label for="start">start:</label>
             <input type="date" id="start" name="start">
@@ -43,7 +45,7 @@
             <input type="number" id="interval" name="interval">
 
             <label for="categories">categories:</label>
-            <select id="categories" name="categories" multiple>
+            <select id="categories" name="categories" multiple size=10>
                 {{ range .AllBuckets }}
                 <option value="{{ . }}">{{ . }}</option>
                 {{ end }}

@@ -86,17 +86,13 @@ func SummarizeCategories(tx *sql.Tx, categories []string, from, through time.Tim
 
 func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Time, interval int) ([]map[string]int, error) {
 	output := []map[string]int{}
-	fmt.Println("start before end:", start.Before(end))
 	for d := start; d.Before(end.AddDate(0, 0, 1)); d = d.AddDate(0, 0, interval) {
 		// summarize from the start to end of an interval period
-		fmt.Println("beginning")
 		c, err := SummarizeCategories(tx, categories, d, d.AddDate(0, 0, interval-1))
-		fmt.Println("c:", c)
 		if err != nil {
 			return nil, fmt.Errorf("calling SummarizeCategories() (%w)", err)
 		}
 		output = append(output, c)
-		fmt.Println("output:", output)
 	}
 	return output, nil
 }

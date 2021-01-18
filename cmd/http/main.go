@@ -117,7 +117,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// call ledger or budget uploader
 	if len(r.PostForm["entry_type"]) > 0 && r.PostForm["entry_type"][0] == "ledger" {
-		fmt.Println("uploading ledger entries")
+		fmt.Println("uploading ledger entries...")
 		// convert csv to ledger entries
 		entries, err := csvreader.CsvToLedgerEntries(filepath)
 		if err != nil {
@@ -135,8 +135,9 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return nil
 		})
+		fmt.Println("success")
 	} else {
-		fmt.Println("uploading budget entries")
+		fmt.Println("uploading budget entries...")
 		entries, err := csvreader.CsvToBudgetEntries(filepath)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Calling csvreader.CsvToBudgetEntries() (%v)", err), http.StatusInternalServerError)
@@ -153,6 +154,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			return nil
 		})
+		fmt.Println("success")
 	}
 	mytemplate.Insert(w, r)
 }
