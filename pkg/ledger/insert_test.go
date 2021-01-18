@@ -12,7 +12,7 @@ import (
 func TestInsertEntry(t *testing.T) {
 	// initialize db and test variables
 	db := testutils.Db(t)
-	bigBang := testutils.BigBang()
+	bigBang := testutils.BigBang
 	entryDate := time.Now()
 	t.Run("one entry",
 		func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestInsertEntry(t *testing.T) {
 func TestInsertRepeatingEntry(t *testing.T) {
 	// initialize db and test vars
 	db := testdb(t)
-	bigBang := testutils.BigBang()
+	bigBang := testutils.BigBang
 	entryDate := time.Now()
 	t.Run("one monthly repeating entry",
 		func(t *testing.T) {

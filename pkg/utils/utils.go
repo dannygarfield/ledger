@@ -7,9 +7,8 @@ import (
 	"time"
 )
 
-func BigBang() time.Time {
-	return time.Date(1996, 4, 11, 0, 0, 0, 0, time.Local)
-}
+var BigBang = time.Date(1996, 4, 11, 0, 0, 0, 0, time.Local)
+// var bb = time.Date(1996, 4, 11, 0, 0, 0, 0, time.Local)
 
 func Tx(db *sql.DB, r *http.Request, work func(tx *sql.Tx) error) {
 	ctx := r.Context()

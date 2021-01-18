@@ -10,8 +10,8 @@ import (
 func TestInsertEntry(t *testing.T) {
 	// initialize db and test variables
 	db := testutils.Db(t)
-	bigBang := testutils.BigBang()
-	dec31 := testutils.Dec31()
+	bigBang := testutils.BigBang
+	dec31 := testutils.Dec31
 	t.Run("one entry",
 		func(t *testing.T) {
 			entry := budget.Entry{
@@ -38,8 +38,8 @@ func TestInsertEntry(t *testing.T) {
 
 func TestGetBudget(t *testing.T) {
 	db := testutils.Db(t)
-	janOne := testutils.JanOne()
-	janTwo := testutils.JanTwo()
+	janOne := testutils.JanOne
+	janTwo := testutils.JanTwo
 	t.Run("one entry",
 		func(t *testing.T) {
 			want := []budget.Entry{
@@ -98,8 +98,8 @@ func TestSummarizeCategory(t *testing.T) {
 				got, err = budget.SummarizeCategory(
 					tx,
 					"",
-					testutils.BigBang(),
-					testutils.BigBang())
+					testutils.BigBang,
+					testutils.BigBang)
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
@@ -112,8 +112,8 @@ func TestSummarizeCategory(t *testing.T) {
 				got, err = budget.SummarizeCategory(
 					tx,
 					"groceries",
-					testutils.BigBang(),
-					testutils.BigBang())
+					testutils.BigBang,
+					testutils.BigBang)
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
@@ -126,8 +126,8 @@ func TestSummarizeCategory(t *testing.T) {
 				got, err = budget.SummarizeCategory(
 					tx,
 					"gifts",
-					testutils.JanOne(),
-					testutils.JanTwo())
+					testutils.JanOne,
+					testutils.JanTwo)
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
@@ -140,8 +140,8 @@ func TestSummarizeCategory(t *testing.T) {
 				got, err = budget.SummarizeCategory(
 					tx,
 					"rent",
-					testutils.JanOne(),
-					testutils.JanTwo())
+					testutils.JanOne,
+					testutils.JanTwo)
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
@@ -154,8 +154,8 @@ func TestSummarizeCategory(t *testing.T) {
 				got, err = budget.SummarizeCategory(
 					tx,
 					"groceries",
-					testutils.JanOne(),
-					testutils.JanTwo())
+					testutils.JanOne,
+					testutils.JanTwo)
 				return err
 			})
 			testutils.AssertEqual(t, want, got)
@@ -164,9 +164,9 @@ func TestSummarizeCategory(t *testing.T) {
 
 func TestSummarizeCategories(t *testing.T) {
 	db := testutils.Db(t)
-	dec31 := testutils.Dec31()
-	janOne := testutils.JanOne()
-	janTwo := testutils.JanTwo()
+	dec31 := testutils.Dec31
+	janOne := testutils.JanOne
+	janTwo := testutils.JanTwo
 	t.Run("empty, no categories given",
 		func(t *testing.T) {
 			want := map[string]int{}
@@ -279,8 +279,8 @@ func TestSummarizeCategories(t *testing.T) {
 
 func TestSummarizeSpendsOverTime(t *testing.T) {
 	db := testutils.Db(t)
-	janOne := testutils.JanOne()
-	janTwo := testutils.JanTwo()
+	janOne := testutils.JanOne
+	janTwo := testutils.JanTwo
 	t.Run("empty, no categories given",
 		func(t *testing.T) {
 			want := []map[string]int{{}}

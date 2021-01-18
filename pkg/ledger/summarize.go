@@ -72,7 +72,7 @@ func SummarizeBalance(tx *sql.Tx, buckets []string, from, through time.Time) (ma
 
 // get daily balances (starting from bigBang) of provided buckets over a given time
 func SummarizeBalanceOverTime(tx *sql.Tx, buckets []string, start, end time.Time) ([]map[string]int, error) {
-	bigBang := utils.BigBang()
+	bigBang := utils.BigBang
 	output := []map[string]int{}
 	for d := start; d.Before(end.AddDate(0, 0, 1)); d = d.AddDate(0, 0, 1) {
 		// summarize from beginning of time through date iterator

@@ -36,7 +36,7 @@ func TestGetLedger(t *testing.T) {
 
 func TestSummarizeBalance(t *testing.T) {
 	db := testutils.Db(t)
-	bigBang := testutils.BigBang()
+	bigBang := testutils.BigBang
 	t.Run("one entry,",
 		func(t *testing.T) {
 			entryDate := time.Now()

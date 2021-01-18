@@ -8,21 +8,13 @@ import (
 	"time"
 )
 
-func BigBang() time.Time {
-	return time.Date(1996, 04, 11, 0, 0, 0, 0, time.UTC)
-}
+var BigBang = time.Date(1996, 04, 11, 0, 0, 0, 0, time.UTC)
 
-func Dec31() time.Time {
-	return time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC)
-}
+var Dec31 = time.Date(2020, 12, 31, 0, 0, 0, 0, time.UTC)
 
-func JanOne() time.Time {
-	return time.Date(2021, 01, 01, 0, 0, 0, 0, time.UTC)
-}
+var JanOne = time.Date(2021, 01, 01, 0, 0, 0, 0, time.UTC)
 
-func JanTwo() time.Time {
-	return time.Date(2021, 01, 02, 0, 0, 0, 0, time.UTC)
-}
+var JanTwo = time.Date(2021, 01, 02, 0, 0, 0, 0, time.UTC)
 
 func Db(t *testing.T) *sql.DB {
 	t.Helper()
