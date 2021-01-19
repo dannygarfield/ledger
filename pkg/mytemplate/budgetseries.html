@@ -68,7 +68,7 @@
             <tr>
                 <td>{{ index $dates $index }}</td>
                 {{ range $i, $value := . }}
-                <td>{{ $value }}</td>
+                <td>{{ $value.String }}</td>
                 {{ end }}
             </tr>
             {{ end }}

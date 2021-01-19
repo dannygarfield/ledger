@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"ledger/pkg/budget"
 	"ledger/pkg/ledger"
+	"ledger/pkg/usd"
 	"ledger/pkg/utils"
 	"net/http"
 	"os"
@@ -106,9 +107,9 @@ func CsvToBudgetEntries(filepath string) ([]budget.Entry, error) {
 			return nil, fmt.Errorf("Parsing string to time.Time: %w", err)
 		}
 		// convert amount value to int
-		amount, err := strconv.Atoi(record[1])
+		amount, err := usd.StringToUsd(record[1])
 		if err != nil {
-			return nil, fmt.Errorf("Converting string to int: %w", err)
+			return nil, fmt.Errorf("Calling usd.StringToUsd: %w", err)
 		}
 		// construct the entry
 		e := budget.Entry{

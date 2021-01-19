@@ -289,10 +289,10 @@ func BudgetOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
 	}
-	plot := ledger.MakePlot(summary, start, interval)
+	plot := budget.MakePlot(summary, start, interval)
 	data := struct {
 		AllBuckets []string
-		Plot       ledger.PlotData
+		Plot       budget.PlotData
 	}{
 		allCategories,
 		*plot,

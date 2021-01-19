@@ -37,15 +37,15 @@
         </form>
         <table>
             <tr>
-                <th>Source</th>
-                <th>Destination</th>
-                <th>Entry Date</th>
+                <th>Date</th>
                 <th>Amount</th>
+                <th>Category</th>
+                <th>Description</th>
             </tr>
             {{ range .Budget }}
             <tr>
                 <td>{{ .EntryDate }}</td>
-                <td>{{ .Amount }}</td>
+                <td>{{ .Amount.String }}</td>
                 <td>{{ .Category }}</td>
                 <td>{{ .Description }}</td>
             </tr>

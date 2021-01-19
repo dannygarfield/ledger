@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"ledger/pkg/budget"
 	"ledger/pkg/testutils"
+	"ledger/pkg/usd"
 	"testing"
 )
 
@@ -92,8 +93,8 @@ func TestSummarizeCategory(t *testing.T) {
 	db := testutils.Db(t)
 	t.Run("empty summary, no category given",
 		func(t *testing.T) {
-			want := 0
-			var got int
+			want := usd.USD(0)
+			var got usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategory(
 					tx,
@@ -106,8 +107,8 @@ func TestSummarizeCategory(t *testing.T) {
 		})
 	t.Run("empty summary, zero entries in time period",
 		func(t *testing.T) {
-			want := 0
-			var got int
+			want := usd.USD(0)
+			var got usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategory(
 					tx,
@@ -120,8 +121,8 @@ func TestSummarizeCategory(t *testing.T) {
 		})
 	t.Run("empty summary, zero entries in category",
 		func(t *testing.T) {
-			want := 0
-			var got int
+			want := usd.USD(0)
+			var got usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategory(
 					tx,
@@ -134,8 +135,8 @@ func TestSummarizeCategory(t *testing.T) {
 		})
 	t.Run("one entry",
 		func(t *testing.T) {
-			want := 3000
-			var got int
+			want := usd.USD(3000)
+			var got usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategory(
 					tx,
@@ -148,8 +149,8 @@ func TestSummarizeCategory(t *testing.T) {
 		})
 	t.Run("two entries over two days",
 		func(t *testing.T) {
-			want := 300
-			var got int
+			want := usd.USD(300)
+			var got usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategory(
 					tx,
@@ -169,8 +170,8 @@ func TestSummarizeCategories(t *testing.T) {
 	janTwo := testutils.JanTwo
 	t.Run("empty, no categories given",
 		func(t *testing.T) {
-			want := map[string]int{}
-			var got map[string]int
+			want := map[string]usd.USD{}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(tx, []string{}, janOne, janTwo)
 				return err
@@ -179,8 +180,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("one category with no entries",
 		func(t *testing.T) {
-			want := map[string]int{"home": 0}
-			var got map[string]int
+			want := map[string]usd.USD{"home": 0}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -193,8 +194,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("one category with no entries in time period",
 		func(t *testing.T) {
-			want := map[string]int{"groceries": 0}
-			var got map[string]int
+			want := map[string]usd.USD{"groceries": 0}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -207,8 +208,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("two categories with no entries",
 		func(t *testing.T) {
-			want := map[string]int{"home": 0, "utilities": 0}
-			var got map[string]int
+			want := map[string]usd.USD{"home": 0, "utilities": 0}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -221,8 +222,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("one category with one entry on one day",
 		func(t *testing.T) {
-			want := map[string]int{"groceries": 100}
-			var got map[string]int
+			want := map[string]usd.USD{"groceries": 100}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -235,8 +236,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("one category with two entries over two days",
 		func(t *testing.T) {
-			want := map[string]int{"groceries": 300}
-			var got map[string]int
+			want := map[string]usd.USD{"groceries": 300}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -249,8 +250,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("multiple entries over multiple days",
 		func(t *testing.T) {
-			want := map[string]int{"groceries": 300, "rent": 3000}
-			var got map[string]int
+			want := map[string]usd.USD{"groceries": 300, "rent": 3000}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -263,8 +264,8 @@ func TestSummarizeCategories(t *testing.T) {
 		})
 	t.Run("three categories",
 		func(t *testing.T) {
-			want := map[string]int{"groceries": 200, "home": 0, "rent": 0}
-			var got map[string]int
+			want := map[string]usd.USD{"groceries": 200, "home": 0, "rent": 0}
+			var got map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeCategories(
 					tx,
@@ -283,8 +284,8 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 	janTwo := testutils.JanTwo
 	t.Run("empty, no categories given",
 		func(t *testing.T) {
-			want := []map[string]int{{}}
-			var got []map[string]int
+			want := []map[string]usd.USD{{}}
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -299,10 +300,10 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("empty, one category given, over one day",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"COBRA": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -317,10 +318,10 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("empty, two categories given, over one day",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"COBRA": 0, "laundry": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -335,11 +336,11 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("empty, two categories given, over two days",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"COBRA": 0, "laundry": 0},
 				{"COBRA": 0, "laundry": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -354,11 +355,11 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("empty, two categories given, over two days",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"COBRA": 0, "laundry": 0},
 				{"COBRA": 0, "laundry": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -373,10 +374,10 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("one category given, over one day",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"groceries": 100},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -391,11 +392,11 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("two categories given, over two days",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"groceries": 100, "rent": 3000},
 				{"groceries": 200, "rent": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -410,10 +411,10 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("one category over two days, skip by two",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"groceries": 300},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -428,10 +429,10 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("two categories over two days, skip by two",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"groceries": 300, "rent": 3000},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,
@@ -446,12 +447,12 @@ func TestSummarizeSpendsOverTime(t *testing.T) {
 		})
 	t.Run("two categories over five days, skip by two",
 		func(t *testing.T) {
-			want := []map[string]int{
+			want := []map[string]usd.USD{
 				{"groceries": 300, "rent": 3000},
 				{"groceries": 0, "rent": 0},
 				{"groceries": 0, "rent": 0},
 			}
-			var got []map[string]int
+			var got []map[string]usd.USD
 			testutils.Tx(t, db, func(tx *sql.Tx) (err error) {
 				got, err = budget.SummarizeSpendsOverTime(
 					tx,

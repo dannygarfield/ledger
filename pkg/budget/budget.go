@@ -3,9 +3,10 @@ package budget
 import (
 	"database/sql"
 	"fmt"
+	"ledger/pkg/usd"
 	"ledger/pkg/utils"
 	"net/http"
-	"strconv"
+	"sort"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,9 +14,15 @@ import (
 
 type Entry struct {
 	EntryDate   time.Time
-	Amount      int
+	Amount      usd.USD
 	Category    string
 	Description string
+}
+
+type PlotData struct {
+	BucketHeaders []string
+	DateHeaders   []string
+	Data          [][]usd.USD
 }
 
 func InsertEntry(tx *sql.Tx, e Entry) error {
@@ -57,14 +64,14 @@ func GetBudgetEntries(tx *sql.Tx, start, end time.Time) ([]Entry, error) {
 }
 
 // get net spend of category from start through end
-func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (int, error) {
+func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (usd.USD, error) {
 	q := `SELECT COALESCE(sum(amount), 0)
 		FROM budget_entries
 		WHERE category = $1
 		AND
 		date(happened_at) BETWEEN date($2) AND date($3)`
 	row := tx.QueryRow(q, category, start, end)
-	var sum int
+	var sum usd.USD
 	if err := row.Scan(&sum); err != nil {
 		return -1, fmt.Errorf("calling row.Scan() (%w)", err)
 	}
@@ -72,8 +79,8 @@ func SummarizeCategory(tx *sql.Tx, category string, start, end time.Time) (int, 
 }
 
 // get net spend of categories from start through end
-func SummarizeCategories(tx *sql.Tx, categories []string, from, through time.Time) (map[string]int, error) {
-	output := map[string]int{}
+func SummarizeCategories(tx *sql.Tx, categories []string, from, through time.Time) (map[string]usd.USD, error) {
+	output := map[string]usd.USD{}
 	for _, c := range categories {
 		val, err := SummarizeCategory(tx, c, from, through)
 		if err != nil {
@@ -84,8 +91,8 @@ func SummarizeCategories(tx *sql.Tx, categories []string, from, through time.Tim
 	return output, nil
 }
 
-func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Time, interval int) ([]map[string]int, error) {
-	output := []map[string]int{}
+func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Time, interval int) ([]map[string]usd.USD, error) {
+	output := []map[string]usd.USD{}
 	for d := start; d.Before(end.AddDate(0, 0, 1)); d = d.AddDate(0, 0, interval) {
 		// summarize from the start to end of an interval period
 		c, err := SummarizeCategories(tx, categories, d, d.AddDate(0, 0, interval-1))
@@ -103,9 +110,9 @@ func PrepareEntryForInsert(r *http.Request) (Entry, error) {
 	if err != nil {
 		return Entry{}, fmt.Errorf("Could not parse entrydate (%v)", err)
 	}
-	amount, err := strconv.Atoi(r.PostForm["amount"][0])
+	amount, err := usd.StringToUsd(r.PostForm["amount"][0])
 	if err != nil {
-		return Entry{}, fmt.Errorf("Could not convert amount field to int (%v)", err)
+		return Entry{}, fmt.Errorf("Calling usd.StringToUsd: %v", err)
 	}
 	entry := Entry{
 		EntryDate:   entrydate,
@@ -166,4 +173,26 @@ func GetLatestBudgetDate(tx *sql.Tx) (time.Time, error) {
 		return utils.BigBang, fmt.Errorf("Calling utils.ParseDate() (%w)", err)
 	}
 	return entrydate, nil
+}
+
+func MakePlot(summary []map[string]usd.USD, start time.Time, interval int) *PlotData {
+	output := &PlotData{}
+
+	if len(summary) > 0 {
+		for b := range summary[0] {
+			output.BucketHeaders = append(output.BucketHeaders, b)
+		}
+		sort.Strings(output.BucketHeaders)
+
+		for i, day := range summary {
+			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i*interval).Format("2006-01-02"))
+			row := []usd.USD{}
+			for _, b := range output.BucketHeaders {
+				row = append(row, day[b])
+			}
+			output.Data = append(output.Data, row)
+		}
+	}
+
+	return output
 }
