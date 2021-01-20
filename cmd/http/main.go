@@ -6,6 +6,7 @@ import (
 	"ledger/pkg/budget"
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
+	"ledger/pkg/myhttp"
 	"ledger/pkg/mytemplate"
 	"ledger/pkg/utils"
 	"log"
@@ -157,6 +158,17 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("success")
 	}
 	mytemplate.Insert(w, r)
+}
+
+func (s *server) handleBudgetList(r *http.Request, w http.ResponseWriter) {
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		err := myhttp.HandleBudgetList(tx, r, w)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Calling mytemplate.Budget() (%v)", err), http.StatusInternalServerError)
+			return err
+		}
+		return nil
+	})
 }
 
 func main() {
