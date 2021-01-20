@@ -11,6 +11,7 @@ import (
 	"ledger/pkg/utils"
 	"log"
 	"net/http"
+	"text/template"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -160,7 +161,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	mytemplate.Insert(w, r)
 }
 
-func (s *server) handleBudgetList(r *http.Request, w http.ResponseWriter) {
+func (s *server) handleBudgetList(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		err := myhttp.HandleBudgetList(tx, r, w)
 		if err != nil {
@@ -171,6 +172,24 @@ func (s *server) handleBudgetList(r *http.Request, w http.ResponseWriter) {
 	})
 }
 
+func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
+	err := func() error {
+		// parse html template
+		t, err := template.ParseFiles("pkg/mytemplate/app.html")
+		if err != nil {
+			return fmt.Errorf("Could not parse app.html (%v)", err)
+		}
+		// execute template
+		if err = t.Execute(w, nil); err != nil {
+			return fmt.Errorf("Could not execute html template")
+		}
+		return nil
+	}()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not handle route /app: %v", err), http.StatusInternalServerError)
+	}
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -179,6 +198,7 @@ func main() {
 
 	s := &server{db: db}
 
+	http.HandleFunc("/app", s.appHandler)
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/balance", s.balanceOverTimeHandler)
 	http.HandleFunc("/ledgerseries", s.ledgerOverTimeHandler)
