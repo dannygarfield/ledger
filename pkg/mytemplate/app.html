@@ -14,9 +14,13 @@
             window.addEventListener("load", function () {
             let p = document.querySelector('p')
             p.style.background = "red"
-            fetch("/insert")
-              .then(r => r.text())
-              .then(t => console.log("body", t))
+            fetch("/data")
+              .then(r => r.json())
+              .then(t => {
+                  console.log("body", t)
+                  let p = document.querySelector('p')
+                  p.style.background = t.Color
+              })
               .catch(e => console.error(e))
             })
         </script>

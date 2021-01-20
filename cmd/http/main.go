@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"ledger/pkg/budget"
 	"ledger/pkg/csvreader"
@@ -190,6 +191,16 @@ func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
+	jsonData, err := json.Marshal(struct{ Color string }{Color: "darksalmon"})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not call json.Marshal: %v", err), http.StatusInternalServerError)
+	}
+	if _, err := w.Write(jsonData); err != nil {
+		fmt.Printf("Could not write to response: %v", err)
+	}
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -199,6 +210,7 @@ func main() {
 	s := &server{db: db}
 
 	http.HandleFunc("/app", s.appHandler)
+	http.HandleFunc("/data", s.dataHandler)
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/balance", s.balanceOverTimeHandler)
 	http.HandleFunc("/ledgerseries", s.ledgerOverTimeHandler)
