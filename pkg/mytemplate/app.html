@@ -14,6 +14,10 @@
             window.addEventListener("load", function () {
             let p = document.querySelector('p')
             p.style.background = "red"
+            fetch("/insert")
+              .then(r => r.text())
+              .then(t => console.log("body", t))
+              .catch(e => console.error(e))
             })
         </script>
         <h1>it's HTML</h1>
