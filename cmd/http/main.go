@@ -69,18 +69,6 @@ func (s *server) ledgerOverTimeHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// budget handlers
-func (s *server) budgetHandler(w http.ResponseWriter, r *http.Request) {
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		err := mytemplate.Budget(tx, w, r)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.Budget() (%v)", err), http.StatusInternalServerError)
-			return err
-		}
-		return nil
-	})
-}
-
 func (s *server) insertBudgetEntryHandler(w http.ResponseWriter, r *http.Request) {
 	entry, err := budget.PrepareEntryForInsert(r)
 	if err != nil {
@@ -97,16 +85,6 @@ func (s *server) insertBudgetEntryHandler(w http.ResponseWriter, r *http.Request
 	})
 	// mytemplate.Insert(w, r)
 	s.ledgerHandler(w, r)
-}
-
-func (s *server) budgetOverTimeHandler(w http.ResponseWriter, r *http.Request) {
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := mytemplate.BudgetOverTime(tx, w, r); err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.BudgetOverTime (%v)", err), http.StatusInternalServerError)
-			return err
-		}
-		return nil
-	})
 }
 
 // insert by CSV
@@ -166,8 +144,17 @@ func (s *server) handleBudgetList(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		err := myhttp.HandleBudgetList(tx, r, w)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Calling mytemplate.Budget() (%v)", err), http.StatusInternalServerError)
-			return err
+			return fmt.Errorf("Calling myhttp.HandleBudgetList (%v)", err)
+		}
+		return nil
+	})
+}
+
+func (s *server) handleBudgetOverTime(w http.ResponseWriter, r *http.Request) {
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		err := myhttp.HandleBudgetOverTime(tx, r, w)
+		if err != nil {
+			return fmt.Errorf("Could not call myhttp.HandleBudgetList: %v", err)
 		}
 		return nil
 	})
@@ -206,16 +193,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("opening database: %v", err)
 	}
-
+	//
 	s := &server{db: db}
-
+	//
 	http.HandleFunc("/app", s.appHandler)
 	http.HandleFunc("/data", s.dataHandler)
+	//
+	http.HandleFunc("/budget", s.handleBudgetList)
+	http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
+	//
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/balance", s.balanceOverTimeHandler)
 	http.HandleFunc("/ledgerseries", s.ledgerOverTimeHandler)
-	http.HandleFunc("/budget", s.budgetHandler)
-	http.HandleFunc("/budgetseries", s.budgetOverTimeHandler)
+	//
 	http.HandleFunc("/insert", mytemplate.Insert)
 	http.HandleFunc("/upload_csv", s.uploadCsvHandler)
 	http.HandleFunc("/insert_ledger_entry", s.insertLedgerEntryHandler)

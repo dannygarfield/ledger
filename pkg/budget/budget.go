@@ -104,6 +104,27 @@ func SummarizeSpendsOverTime(tx *sql.Tx, categories []string, start, end time.Ti
 	return output, nil
 }
 
+// prepare data to be used in html template
+func MakePlot(summary []map[string]usd.USD, start time.Time, interval int) *PlotData {
+	output := &PlotData{}
+	if len(summary) > 0 {
+		for b := range summary[0] {
+			output.BucketHeaders = append(output.BucketHeaders, b)
+		}
+		sort.Strings(output.BucketHeaders)
+
+		for i, day := range summary {
+			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i*interval).Format("2006-01-02"))
+			row := []usd.USD{}
+			for _, b := range output.BucketHeaders {
+				row = append(row, day[b])
+			}
+			output.Data = append(output.Data, row)
+		}
+	}
+	return output
+}
+
 func PrepareEntryForInsert(r *http.Request) (Entry, error) {
 	r.ParseForm()
 	entrydate, err := time.Parse("2006-01-02", r.PostForm["happened_at"][0])
@@ -173,26 +194,4 @@ func GetLatestBudgetDate(tx *sql.Tx) (time.Time, error) {
 		return utils.BigBang, fmt.Errorf("Calling utils.ParseDate() (%w)", err)
 	}
 	return entrydate, nil
-}
-
-func MakePlot(summary []map[string]usd.USD, start time.Time, interval int) *PlotData {
-	output := &PlotData{}
-
-	if len(summary) > 0 {
-		for b := range summary[0] {
-			output.BucketHeaders = append(output.BucketHeaders, b)
-		}
-		sort.Strings(output.BucketHeaders)
-
-		for i, day := range summary {
-			output.DateHeaders = append(output.DateHeaders, start.AddDate(0, 0, i*interval).Format("2006-01-02"))
-			row := []usd.USD{}
-			for _, b := range output.BucketHeaders {
-				row = append(row, day[b])
-			}
-			output.Data = append(output.Data, row)
-		}
-	}
-
-	return output
 }

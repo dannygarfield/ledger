@@ -26,8 +26,8 @@
             <li><a href="/budget">budget</a></li>
             <li><a href="/budgetseries">budget over time</a></li>
         </ul>
-        <h1>budget</h1>
-        <p>From <b>{{ .Start }}</b> until <b>{{ .End }}</b><p>
+        <h1>budget entries</h1>
+        <p>from <b>{{ .Start.Format "2006-01-02" }}</b> until <b>{{ .End.Format "2006-01-02" }}</b><p>
         <form action="/budget" method="POST">
             <label for="start">start:</label>
             <input type="date" id="start" name="start">
@@ -35,6 +35,7 @@
             <input type="date" id="end" name="end">
             <input type="submit" value="Submit">
         </form>
+        <br>
         <table>
             <tr>
                 <th>Date</th>
@@ -42,9 +43,9 @@
                 <th>Category</th>
                 <th>Description</th>
             </tr>
-            {{ range .Budget }}
+            {{ range .BudgetList }}
             <tr>
-                <td>{{ .EntryDate }}</td>
+                <td>{{ .EntryDate.Format "2006-01-02" }}</td>
                 <td>{{ .Amount.String }}</td>
                 <td>{{ .Category }}</td>
                 <td>{{ .Description }}</td>

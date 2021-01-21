@@ -3,6 +3,7 @@ package usd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // USD represents a quantity of US money.
@@ -21,9 +22,14 @@ func (d *USD) String() string {
 }
 
 func StringToUsd(s string) (USD, error) {
-	int, err := strconv.Atoi(s)
-	if err != nil {
-		return USD(-1), err
+	if strings.Contains(s, ".") {
+		float, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return USD(-1), err
+		}
+		int := int(float)
+		return USD(int), nil
+	} else {
+		return USD(-1), fmt.Errorf("Could not parse %s, must enter dollar amount with decimal and cents", s)
 	}
-	return USD(int), nil
 }

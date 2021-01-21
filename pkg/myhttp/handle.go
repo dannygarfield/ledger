@@ -4,66 +4,91 @@ import (
 	"database/sql"
 	"fmt"
 	"ledger/pkg/budget"
-	"ledger/pkg/utils"
+	"ledger/pkg/mytemplate"
 	"net/http"
-	"net/url"
 	"time"
 )
 
 func HandleBudgetList(tx *sql.Tx, r *http.Request, w http.ResponseWriter) error {
+	r.ParseForm()
 	// set start date
-	start, err := SetStartDate(tx, r.Form)
+	startDate, err := SetStartDate(tx, r.Form)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Calling myhttp.SetStartDate: %v", err), http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("Calling SetStartDate: %v", err)
 	}
 	// set end date
-	end, err := SetEndDate(tx, r.Form)
+	endDate, err := SetEndDate(tx, r.Form)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Calling myhttp.SetStartDate: %v", err), http.StatusInternalServerError)
-		return err
+		return fmt.Errorf("Calling SetEndDate: %v", err)
 	}
 	// get budget entries
-	budgetEntries, err := budget.GetBudgetEntries(tx, start, end)
+	budgetEntries, err := budget.GetBudgetEntries(tx, startDate, endDate)
 	if err != nil {
 		return fmt.Errorf("Calling budget.GetBudgetEntries() (%v)", err)
 	}
-    fmt.Println(budgetEntries)
-    return nil
+	// construct data for html template
+	htmlTemplateData := struct {
+		Start, End time.Time
+		BudgetList []budget.Entry
+	}{
+		startDate,
+		endDate,
+		budgetEntries,
+	}
+	// call template function
+	err = mytemplate.BudgetList(w, htmlTemplateData)
+	if err != nil {
+		return fmt.Errorf("Could not call mytemplate.BudgetList: %v", err)
+	}
+	return nil
 }
 
-func SetStartDate(tx *sql.Tx, values url.Values) (time.Time, error) {
-	formStart := values.Get("start")
-	if formStart != "" {
-		start, err := time.Parse("2006-01-02", formStart)
-		if err != nil {
-			return utils.BigBang, fmt.Errorf("Parsing time (%v)", err)
-		}
-		return start, nil
-	} else {
-		start, err := budget.GetEarliestBudgetDate(tx)
-		if err != nil {
-			return utils.BigBang, fmt.Errorf("Calling budget.GetEarliestBudgetDate() (%v)", err)
-		}
-		return start, nil
-
+func HandleBudgetOverTime(tx *sql.Tx, r *http.Request, w http.ResponseWriter) error {
+	r.ParseForm()
+	// set start date
+	startDate, err := SetStartDate(tx, r.Form)
+	if err != nil {
+		return fmt.Errorf("Calling SetStartDate: %v", err)
 	}
-}
-
-func SetEndDate(tx *sql.Tx, values url.Values) (time.Time, error) {
-	formEnd := values.Get("end")
-	if formEnd != "" {
-		end, err := time.Parse("2006-01-02", formEnd)
-		if err != nil {
-			return utils.BigBang, fmt.Errorf("Parsing time (%v)", err)
-		}
-		return end, nil
-	} else {
-		end, err := budget.GetLatestBudgetDate(tx)
-		if err != nil {
-			return utils.BigBang, fmt.Errorf("Calling budget.GetLatestBudgetDate() (%v)", err)
-		}
-		return end, nil
-
+	// set end date
+	endDate, err := SetEndDate(tx, r.Form)
+	if err != nil {
+		return fmt.Errorf("Calling SetEndDate: %v", err)
 	}
+	// set interval
+	timeInterval, err := SetTimeInterval(r.Form)
+	if err != nil {
+		return fmt.Errorf("Calling SetTimeInterval: %v", err)
+	}
+	// set categories
+	filterCategories, allCategories, err := SetBudgetCategories(tx, r.Form)
+	if err != nil {
+		return fmt.Errorf("Calling SetBudgetCategories: %v", err)
+	}
+	// get summary of spending over time
+	spendSummary, err := budget.SummarizeSpendsOverTime(tx, filterCategories, startDate, endDate, timeInterval)
+	if err != nil {
+		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
+	}
+	// plot
+	plot := budget.MakePlot(spendSummary, startDate, timeInterval)
+	// construct data for html template
+	htmlTemplateData := struct {
+		Start, End    time.Time
+		TimeInterval  int
+		AllCategories []string
+		Plot          budget.PlotData
+	}{
+		startDate,
+		endDate,
+		timeInterval,
+		allCategories,
+		*plot,
+	}
+	// call template function
+	err = mytemplate.BudgetOverTime(w, htmlTemplateData)
+	if err != nil {
+		return fmt.Errorf("Could not call mytemplate.BudgetOverTime: %v", err)
+	}
+	return nil
 }
