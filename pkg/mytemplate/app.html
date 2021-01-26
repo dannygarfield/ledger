@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
     <head>
-        <title>hello js</title>
+        <title>budget</title>
         <style>
             body {
               background: cornsilk;
@@ -10,21 +10,53 @@
         </style>
     </head>
     <body>
+        <h1>Budget via JSON</h1>
+        <ul class="errors">
+        </ul>
+        <table class="budget">
+            <thead>
+            <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Category</th>
+                <th>Description</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
         <script>
             window.addEventListener("load", function () {
-            let p = document.querySelector('p')
-            p.style.background = "red"
-            fetch("/data")
+            fetch("/budget.json")
               .then(r => r.json())
-              .then(t => {
-                  console.log("body", t)
-                  let p = document.querySelector('p')
-                  p.style.background = t.Color
+              .then(entries => {
+                  console.log("body", entries)
+                  const table = document.querySelector('.budget tbody')
+                  entries.forEach(entry => {
+                      const tr = document.createElement('tr')
+                      const date = document.createElement('td')
+                      date.textContent = entry.EntryDate
+                      tr.appendChild(date)
+                      const amount = document.createElement('td')
+                      amount.textContent = entry.Amount
+                      tr.appendChild(amount)
+                      const category = document.createElement('td')
+                      category.textContent = entry.Category
+                      tr.appendChild(category)
+                      const description = document.createElement('td')
+                      description.textContent = entry.Description
+                      tr.appendChild(description)
+                      table.appendChild(tr)
+                  })
               })
-              .catch(e => console.error(e))
+              .catch(e => {
+                  console.error(e)
+                  const errs = document.querySelector(".errors")
+                  const li = document.createElement("li")
+                  li.textContent = String(e)
+                  errs.appendChild(li)
+              })
             })
         </script>
-        <h1>it's HTML</h1>
-        <p>good morning!</p>
     </body>
 </html>

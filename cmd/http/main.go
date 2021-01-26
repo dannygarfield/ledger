@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"ledger/pkg/budget"
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
@@ -13,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"text/template"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -188,6 +191,23 @@ func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
+	startDate, endDate := utils.BigBang, time.Now()
+	var entries []budget.Entry
+	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
+		entries, err = budget.GetBudgetEntries(tx, startDate, endDate)
+		return err
+	})
+	w.Header().Add("content-type", "application/json")
+	out, err := json.Marshal(entries)
+	if err != nil {
+		log.Printf("marshaling entries: %v", err)
+	}
+	if _, err := io.Copy(w, bytes.NewBuffer(out)); err != nil {
+		log.Printf("writing response: %v", err)
+	}
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -198,6 +218,7 @@ func main() {
 	//
 	http.HandleFunc("/app", s.appHandler)
 	http.HandleFunc("/data", s.dataHandler)
+	http.HandleFunc("/budget.json", s.getBudget)
 	//
 	http.HandleFunc("/budget", s.handleBudgetList)
 	http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
