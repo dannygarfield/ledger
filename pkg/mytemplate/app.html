@@ -25,6 +25,22 @@
             <tbody>
             </tbody>
         </table>
+        <h1>Insert a budget entry</h1>
+        <form action="" method="POST">
+            <label for="happened_at">happened_at:</label><br>
+            <input type="text" id="happened_at" name="happened_at" value=""><br>
+
+            <label for="amount">amount:</label><br>
+            <input type="text" id="amount" name="amount" value=""><br>
+
+            <label for="category">category:</label><br>
+            <input type="text" id="category" name="category" value=""><br>
+
+            <label for="description">description:</label><br>
+            <input type="text" id="description" name="description" value=""><br><br>
+
+          <input type="submit" value="Submit" onclick="submitEntry()">
+        </form>
         <script>
             window.addEventListener("load", function () {
             fetch("/budget.json")
@@ -57,6 +73,15 @@
                   errs.appendChild(li)
               })
             })
+            function submitEntry() {
+                // find form element
+                //  parse form / extract values from inputs
+                //  construct javascript object
+                // call JSON.stringify(js object)
+                // call fetch with method POST and with our stringified data
+                // 
+
+            }
         </script>
     </body>
 </html>

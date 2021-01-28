@@ -208,6 +208,16 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
+	form := budget.Entry
+	json.Unmarshal(r.Body, form)
+	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
+		err = budget.InsertEntry(tx, form)
+		return err
+	})
+	w.WriteHeader(200)
+}
+
 func main() {
 	db, err := sql.Open("sqlite3", "./db.sqlite3")
 	if err != nil {
@@ -219,6 +229,7 @@ func main() {
 	http.HandleFunc("/app", s.appHandler)
 	http.HandleFunc("/data", s.dataHandler)
 	http.HandleFunc("/budget.json", s.getBudget)
+	http.HandleFunc("/insert.json", s.insertBudgetViaJson)
 	//
 	http.HandleFunc("/budget", s.handleBudgetList)
 	http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
