@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"ledger/pkg/budget"
 	"ledger/pkg/csvreader"
 	"ledger/pkg/ledger"
@@ -192,7 +193,7 @@ func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
-	startDate, endDate := utils.BigBang, time.Now()
+	startDate, endDate := utils.BigBang, time.Now().AddDate(0,1, 0)
 	var entries []budget.Entry
 	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
 		entries, err = budget.GetBudgetEntries(tx, startDate, endDate)
@@ -209,13 +210,32 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
-	form := budget.Entry
-	json.Unmarshal(r.Body, form)
-	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
-		err = budget.InsertEntry(tx, form)
-		return err
-	})
-	w.WriteHeader(200)
+		type StringEntry struct {
+				EntryDate   string
+				Amount      string
+				Category    string
+				Description string
+		}
+		//
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Printf("Error: %v", err)
+			return
+		}
+		//
+		var entry StringEntry
+		json.Unmarshal(body, &entry)
+		fmt.Println("unmarshaled form:", entry)
+		//
+		// w.Header().Add("content-type", "application/json")
+		// json, err := json.Marshal(entry)
+		// if err != nil {
+		// 	log.Printf("marshaling entry: %v", err)
+		// }
+		// if _, err := io.Copy(w, bytes.NewBuffer(json)); err != nil {
+		// 	log.Printf("writing response: %v", err)
+		// }
+		// w.WriteHeader(200)
 }
 
 func main() {

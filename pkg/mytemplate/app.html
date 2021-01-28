@@ -6,6 +6,18 @@
             body {
               background: cornsilk;
               color: darkslategrey;
+              font-family: verdana;
+              font-size: 12px;
+            }
+            label {
+              display: inline-block;
+              width: 120px;
+              margin-bottom: 8px;
+            }
+            table, th, td {
+                border: 1px solid #888888;
+                border-collapse: collapse;
+                padding: 4px;
             }
         </style>
     </head>
@@ -26,62 +38,91 @@
             </tbody>
         </table>
         <h1>Insert a budget entry</h1>
-        <form action="" method="POST">
-            <label for="happened_at">happened_at:</label><br>
-            <input type="text" id="happened_at" name="happened_at" value=""><br>
-
-            <label for="amount">amount:</label><br>
-            <input type="text" id="amount" name="amount" value=""><br>
-
-            <label for="category">category:</label><br>
-            <input type="text" id="category" name="category" value=""><br>
-
-            <label for="description">description:</label><br>
-            <input type="text" id="description" name="description" value=""><br><br>
-
-          <input type="submit" value="Submit" onclick="submitEntry()">
+        <form>
+            <label for="entrydate">happened_at:</label>
+            <input type="text" id="entrydate" name="entrydate" value="">
+            <br>
+            <label for="amount">amount:</label>
+            <input type="text" id="amount" name="amount" value="">
+            <br>
+            <label for="category">category:</label>
+            <input type="text" id="category" name="category" value="">
+            <br>
+            <label for="description">description:</label>
+            <input type="text" id="description" name="description" value="">
+            <br>
+            <input type="submit" value="Submit" id="submit">
         </form>
         <script>
-            window.addEventListener("load", function () {
+          // constants
+          const form = document.querySelector('form');
+
+          // EVENT LISTENERS
+          window.addEventListener('load', loadBudgetEntries);
+          form.addEventListener('submit', submitEntry);
+
+          // HElPER FUNCTIONS
+
+          // display table of all data
+          function loadBudgetEntries(event) {
             fetch("/budget.json")
-              .then(r => r.json())
-              .then(entries => {
-                  console.log("body", entries)
-                  const table = document.querySelector('.budget tbody')
-                  entries.forEach(entry => {
-                      const tr = document.createElement('tr')
-                      const date = document.createElement('td')
-                      date.textContent = entry.EntryDate
-                      tr.appendChild(date)
-                      const amount = document.createElement('td')
-                      amount.textContent = entry.Amount
-                      tr.appendChild(amount)
-                      const category = document.createElement('td')
-                      category.textContent = entry.Category
-                      tr.appendChild(category)
-                      const description = document.createElement('td')
-                      description.textContent = entry.Description
-                      tr.appendChild(description)
-                      table.appendChild(tr)
-                  })
-              })
-              .catch(e => {
-                  console.error(e)
-                  const errs = document.querySelector(".errors")
-                  const li = document.createElement("li")
-                  li.textContent = String(e)
-                  errs.appendChild(li)
-              })
+            .then(r => r.json())
+            .then(entries => {
+                console.log("body", entries)
+                const table = document.querySelector('.budget tbody')
+                entries.forEach(entry => {
+                    const tr = document.createElement('tr')
+                    const date = document.createElement('td')
+                    date.textContent = entry.EntryDate
+                    tr.appendChild(date)
+                    const amount = document.createElement('td')
+                    amount.textContent = entry.Amount
+                    tr.appendChild(amount)
+                    const category = document.createElement('td')
+                    category.textContent = entry.Category
+                    tr.appendChild(category)
+                    const description = document.createElement('td')
+                    description.textContent = entry.Description
+                    tr.appendChild(description)
+                    table.appendChild(tr)
+                })
             })
-            function submitEntry() {
-                // find form element
+            .catch(e => {
+                console.error(e)
+                const errs = document.querySelector(".errors")
+                const li = document.createElement("li")
+                li.textContent = String(e)
+                errs.appendChild(li)
+            })
+          }
+          //
+          function submitEntry(event) {
+            event.preventDefault();
+            // identify form values
+            const entrydate = document.getElementById('entrydate').value
+            const amount = document.getElementById('amount').value
+            const category = document.getElementById('category').value
+            const description = document.getElementById('description').value
+            const config = {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({entrydate, amount, category, description})
+            }
+            // fetch
+            fetch('https://jsonplaceholder.typicode.com/comments', config)
+              .then( res => res.json() )
+              .then( data => console.log(data) )
+              .catch( err => console.log('something went wrong:', err) )
+            }
+
                 //  parse form / extract values from inputs
                 //  construct javascript object
                 // call JSON.stringify(js object)
                 // call fetch with method POST and with our stringified data
-                // 
+                //
 
-            }
         </script>
     </body>
 </html>
