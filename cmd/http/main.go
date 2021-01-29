@@ -12,6 +12,7 @@ import (
 	"ledger/pkg/ledger"
 	"ledger/pkg/myhttp"
 	"ledger/pkg/mytemplate"
+	"ledger/pkg/usd"
 	"ledger/pkg/utils"
 	"log"
 	"net/http"
@@ -210,6 +211,7 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("inserting via json")
 		type StringEntry struct {
 				EntryDate   string
 				Amount      string
@@ -223,19 +225,40 @@ func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		//
-		var entry StringEntry
-		json.Unmarshal(body, &entry)
-		fmt.Println("unmarshaled form:", entry)
+		var stringEntry StringEntry
+		json.Unmarshal(body, &stringEntry)
+		fmt.Println("unmarshaled form:", stringEntry)
 		//
-		// w.Header().Add("content-type", "application/json")
-		// json, err := json.Marshal(entry)
-		// if err != nil {
-		// 	log.Printf("marshaling entry: %v", err)
-		// }
-		// if _, err := io.Copy(w, bytes.NewBuffer(json)); err != nil {
-		// 	log.Printf("writing response: %v", err)
-		// }
-		// w.WriteHeader(200)
+		var entry budget.Entry
+		entry.EntryDate, err = time.Parse("2006-01-02", stringEntry.EntryDate)
+		if err != nil {
+			fmt.Printf("Parsing start time (%v)", err)
+			return
+		}
+		entry.Amount, err = usd.StringToUsd(stringEntry.Amount)
+		if err != nil {
+			fmt.Printf("Calling usd.StringToUsd: %v", err)
+			return
+		}
+		entry.Category = stringEntry.Category
+		entry.Description = stringEntry.Description
+		//
+		utils.Tx(s.db, r, func(tx *sql.Tx) error {
+			if err := budget.InsertEntry(tx, entry); err != nil {
+				http.Error(w, fmt.Sprintf("Calling budget.InsertEntry() (%v)", err), http.StatusInternalServerError)
+				return err
+			}
+			return nil
+		})
+		//
+		w.Header().Add("content-type", "application/json")
+		json, err := json.Marshal(entry)
+		if err != nil {
+			log.Printf("marshaling entry: %v", err)
+		}
+		if _, err := io.Copy(w, bytes.NewBuffer(json)); err != nil {
+			log.Printf("writing response: %v", err)
+		}
 }
 
 func main() {
