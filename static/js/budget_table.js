@@ -7,6 +7,8 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25,30 +27,31 @@ var EntryRow = function (_React$Component) {
   }
 
   _createClass(EntryRow, [{
-    key: "render",
+    key: 'render',
     value: function render() {
       var entry = this.props.entry;
+      var formattedAmount = (entry.Amount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+      var formattedDate = formatDate(entry.EntryDate);
       return React.createElement(
-        "tr",
+        'tr',
         null,
         React.createElement(
-          "td",
+          'td',
           null,
-          entry.EntryDate
+          formattedDate
         ),
         React.createElement(
-          "td",
+          'td',
           null,
-          "$",
-          entry.Amount
+          formattedAmount
         ),
         React.createElement(
-          "td",
+          'td',
           null,
           entry.Category
         ),
         React.createElement(
-          "td",
+          'td',
           null,
           entry.Description
         )
@@ -69,19 +72,17 @@ var TableRows = function (_React$Component2) {
   }
 
   _createClass(TableRows, [{
-    key: "render",
+    key: 'render',
     value: function render() {
       var rows = [];
       this.props.entries.forEach(function (entry, index) {
-        entry.EntryDate = formatDate(entry.EntryDate);
-        entry.Amount = entry.Amount / 100;
         rows.push(React.createElement(EntryRow, {
           entry: entry,
           key: index }));
       });
 
       return React.createElement(
-        "tbody",
+        'tbody',
         null,
         rows
       );
@@ -101,33 +102,33 @@ var Header = function (_React$Component3) {
   }
 
   _createClass(Header, [{
-    key: "render",
+    key: 'render',
     value: function render() {
       return React.createElement(
-        "thead",
+        'thead',
         null,
         React.createElement(
-          "tr",
+          'tr',
           null,
           React.createElement(
-            "th",
+            'th',
             null,
-            "Date"
+            'Date'
           ),
           React.createElement(
-            "th",
+            'th',
             null,
-            "Amount"
+            'Amount'
           ),
           React.createElement(
-            "th",
+            'th',
             null,
-            "Category"
+            'Category'
           ),
           React.createElement(
-            "th",
+            'th',
             null,
-            "Description"
+            'Description'
           )
         )
       );
@@ -159,7 +160,7 @@ var DateFilters = function (_React$Component4) {
   }
 
   _createClass(DateFilters, [{
-    key: "handleFilterChange",
+    key: 'handleFilterChange',
     value: function handleFilterChange(e) {
       var value = e.target.value;
       var name = e.target.name;
@@ -168,34 +169,34 @@ var DateFilters = function (_React$Component4) {
       });
     }
   }, {
-    key: "render",
+    key: 'render',
     value: function render() {
       return React.createElement(
-        "form",
+        'form',
         null,
         React.createElement(
-          "label",
-          { className: "filters" },
-          "start:"
+          'label',
+          { className: 'filters' },
+          'start:'
         ),
-        React.createElement("input", {
-          type: "date",
-          name: "startDate",
+        React.createElement('input', {
+          type: 'date',
+          name: 'startDate',
           value: this.state.startDate,
           onChange: this.handleFilterChange }),
-        React.createElement("br", null),
+        React.createElement('br', null),
         React.createElement(
-          "label",
-          { className: "filters" },
-          "end:"
+          'label',
+          { className: 'filters' },
+          'end:'
         ),
-        React.createElement("input", {
-          type: "date",
-          name: "endDate",
+        React.createElement('input', {
+          type: 'date',
+          name: 'endDate',
           value: this.state.endDate,
           onChange: this.handleFilterChange }),
-        React.createElement("br", null),
-        React.createElement("input", { type: "submit", value: "Submit" })
+        React.createElement('br', null),
+        React.createElement('input', { type: 'submit', value: 'Submit' })
       );
     }
   }]);
@@ -213,20 +214,20 @@ var BudgetTable = function (_React$Component5) {
   }
 
   _createClass(BudgetTable, [{
-    key: "render",
+    key: 'render',
     value: function render() {
       return React.createElement(
-        "div",
+        'div',
         null,
         React.createElement(
-          "h2",
+          'h2',
           null,
-          "budget table"
+          'budget table'
         ),
         React.createElement(DateFilters, { entries: this.props.entries }),
-        React.createElement("br", null),
+        React.createElement('br', null),
         React.createElement(
-          "table",
+          'table',
           null,
           React.createElement(Header, null),
           React.createElement(TableRows, {
@@ -250,8 +251,58 @@ var EntryForm = function (_React$Component6) {
 
     _this6.handleInputChange = _this6.handleInputChange.bind(_this6);
 
+    _this6.handleSubmitEntry = function (e) {
+      e.preventDefault();
+      // identify form values
+      var entryDate = _this6.state.entryDate;
+      var amount = _this6.state.amount;
+      var category = _this6.state.category;
+      var description = _this6.state.description;
+
+      if ([entryDate, amount, category, description].some(function (i) {
+        return i === '';
+      })) {
+        return;
+      }
+
+      var newEntry = {
+        EntryDate: _this6.state.entryDate,
+        Amount: (_this6.state.amount * 100).toString(),
+        Category: _this6.state.category,
+        Description: _this6.state.description
+      };
+
+      // config for POST
+      var config = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newEntry)
+        // post to db
+      };fetch('/insert.json', config).then(function (response) {
+        return response.json();
+      }).then(function (responseData) {
+        console.log(responseData);
+        _this6.props.addEntry(newEntry);
+        _this6.setState(function (state) {
+          return {
+            entryDate: '',
+            amount: '',
+            category: '',
+            description: ''
+          };
+        });
+      }).catch(function (err) {
+        return console.log('something went wrong...:', err);
+      });
+
+      //
+      console.log("constructing entry ...");
+    };
+
     _this6.state = {
-      happened_at: '',
+      entryDate: '',
       amount: '',
       category: '',
       description: ''
@@ -260,7 +311,7 @@ var EntryForm = function (_React$Component6) {
   }
 
   _createClass(EntryForm, [{
-    key: "handleInputChange",
+    key: 'handleInputChange',
     value: function handleInputChange(e) {
       var name = e.target.name;
       var value = e.target.value;
@@ -269,60 +320,64 @@ var EntryForm = function (_React$Component6) {
       });
     }
   }, {
-    key: "render",
+    key: 'render',
     value: function render() {
       return React.createElement(
-        "div",
+        'div',
         null,
         React.createElement(
-          "h2",
+          'h2',
           null,
-          "Insert a budget entry"
+          'Insert a budget entry'
         ),
         React.createElement(
-          "form",
-          null,
+          'form',
+          { onSubmit: this.handleSubmitEntry },
           React.createElement(
-            "label",
-            { className: "entry-form" },
-            "happened_at"
+            'label',
+            { className: 'entry-form' },
+            'entry date'
           ),
-          React.createElement("input", {
-            name: "happened_at",
-            type: "text",
-            value: this.state.happened_at,
+          React.createElement('input', {
+            name: 'entryDate',
+            type: 'text',
+            value: this.state.entryDate,
             onChange: this.handleInputChange }),
-          React.createElement("br", null),
+          React.createElement('br', null),
           React.createElement(
-            "label",
-            { className: "entry-form" },
-            "amount"
+            'label',
+            { className: 'entry-form' },
+            'amount'
           ),
-          React.createElement("input", {
-            name: "amount",
-            type: "text",
+          React.createElement('input', {
+            name: 'amount',
+            type: 'text',
             value: this.state.amount,
             onChange: this.handleInputChange }),
-          React.createElement("br", null),
+          React.createElement('br', null),
           React.createElement(
-            "label",
-            { className: "entry-form" },
-            "category"
+            'label',
+            { className: 'entry-form' },
+            'category'
           ),
-          React.createElement("input", {
-            name: "category",
-            type: "text",
+          React.createElement('input', {
+            name: 'category',
+            type: 'text',
             value: this.state.category,
             onChange: this.handleInputChange }),
-          React.createElement("br", null),
+          React.createElement('br', null),
           React.createElement(
-            "label",
-            { className: "entry-form" },
-            "amount"
+            'label',
+            { className: 'entry-form' },
+            'description'
           ),
-          React.createElement("input", { name: "description", type: "text" }),
-          React.createElement("br", null),
-          React.createElement("input", { type: "submit", value: "Submit" })
+          React.createElement('input', {
+            name: 'description',
+            type: 'text',
+            value: this.state.description,
+            onChange: this.handleInputChange }),
+          React.createElement('br', null),
+          React.createElement('input', { type: 'submit', value: 'Submit' })
         )
       );
     }
@@ -339,50 +394,59 @@ var BudgetPage = function (_React$Component7) {
 
     var _this7 = _possibleConstructorReturn(this, (BudgetPage.__proto__ || Object.getPrototypeOf(BudgetPage)).call(this));
 
+    _this7.handleAddEntry = function (entry) {
+      _this7.setState(function (prevState) {
+        return {
+          entries: [].concat(_toConsumableArray(prevState.entries), [entry])
+        };
+      });
+    };
+
     _this7.state = {
-      jsonEntries: []
+      entries: []
     };
     return _this7;
   }
 
   _createClass(BudgetPage, [{
-    key: "componentDidMount",
+    key: 'render',
+    value: function render() {
+      if (this.state.entries.length > 0) {
+        return React.createElement(
+          'div',
+          null,
+          React.createElement(
+            'h1',
+            null,
+            'welcome!'
+          ),
+          React.createElement(EntryForm, { addEntry: this.handleAddEntry }),
+          React.createElement(BudgetTable, { entries: this.state.entries })
+        );
+      } else {
+        return React.createElement(
+          'p',
+          null,
+          'waiting for entries to load...'
+        );
+      }
+    }
+  }, {
+    key: 'componentDidMount',
     value: function componentDidMount() {
       var _this8 = this;
 
       console.log("fetching budget.json ...");
-      fetch('http://localhost:8080/budget.json').then(function (response) {
+      fetch('/budget.json').then(function (response) {
         return response.json();
       }).then(function (responseData) {
         console.log("success!");
         console.log(responseData);
-        _this8.setState({ jsonEntries: responseData });
+        // responseData.forEach((e) => e.Amount = e.Amount / 100);
+        _this8.setState({ entries: responseData });
       }).catch(function (error) {
         console.log('Error fetching and parsing data', error);
       });
-    }
-  }, {
-    key: "render",
-    value: function render() {
-      if (this.state.jsonEntries.length > 0) {
-        return React.createElement(
-          "div",
-          null,
-          React.createElement(
-            "h1",
-            null,
-            "welcome!"
-          ),
-          React.createElement(EntryForm, null),
-          React.createElement(BudgetTable, { entries: this.state.jsonEntries })
-        );
-      } else {
-        return React.createElement(
-          "p",
-          null,
-          "waiting for entries to load..."
-        );
-      }
     }
   }]);
 
@@ -402,7 +466,7 @@ function formatDate(inputDate) {
     month = '0' + month;
   }
   if (day.length < 2) {
-    month = '0' + month;
+    day = '0' + day;
   }
   return [year, month, day].join("-");
 }

@@ -27,7 +27,7 @@ func StringToUsd(s string) (USD, error) {
 		if err != nil {
 			return USD(-1), err
 		}
-		int := int(float*100)
+		int := int(float * 100)
 		return USD(int), nil
 	} else {
 		return USD(-1), fmt.Errorf("Could not parse %s, must enter dollar amount with decimal and cents", s)

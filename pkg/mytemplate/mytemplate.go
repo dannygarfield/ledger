@@ -215,7 +215,7 @@ func BudgetOverTime2(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	}
 	// parse html form
 	r.ParseForm()
- 	r.Form.Get("categories")
+	r.Form.Get("categories")
 
 	formStart := r.PostForm["start"]
 	formEnd := r.PostForm["end"]

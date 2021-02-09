@@ -16,6 +16,7 @@ import (
 	"ledger/pkg/utils"
 	"log"
 	"net/http"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -194,7 +195,7 @@ func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
-	startDate, endDate := utils.BigBang, time.Now().AddDate(0,1, 0)
+	startDate, endDate := utils.BigBang, time.Now().AddDate(0, 1, 0)
 	var entries []budget.Entry
 	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
 		entries, err = budget.GetBudgetEntries(tx, startDate, endDate)
@@ -203,7 +204,7 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-    w.Header().Add("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	w.Header().Add("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 	out, err := json.Marshal(entries)
 	if err != nil {
 		log.Printf("marshaling entries: %v", err)
@@ -214,54 +215,55 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("inserting via json")
-		type StringEntry struct {
-				EntryDate   string
-				Amount      string
-				Category    string
-				Description string
+	fmt.Println("inserting via json")
+	type StringEntry struct {
+		EntryDate   string
+		Amount      string
+		Category    string
+		Description string
+	}
+	//
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		return
+	}
+	//
+	var stringEntry StringEntry
+	json.Unmarshal(body, &stringEntry)
+	fmt.Println("unmarshaled form:", stringEntry)
+	//
+	var entry budget.Entry
+	entry.EntryDate, err = time.Parse("2006-01-02", stringEntry.EntryDate)
+	if err != nil {
+		fmt.Printf("Parsing start time (%v)", err)
+		return
+	}
+	amountInt, err := strconv.Atoi(stringEntry.Amount)
+	if err != nil {
+		fmt.Printf("Could not convert form string %s to number: %v", stringEntry.Amount, err)
+		return
+	}
+	entry.Amount = usd.USD(amountInt)
+	entry.Category = stringEntry.Category
+	entry.Description = stringEntry.Description
+	//
+	utils.Tx(s.db, r, func(tx *sql.Tx) error {
+		if err := budget.InsertEntry(tx, entry); err != nil {
+			http.Error(w, fmt.Sprintf("Calling budget.InsertEntry() (%v)", err), http.StatusInternalServerError)
+			return err
 		}
-		//
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fmt.Printf("Error: %v", err)
-			return
-		}
-		//
-		var stringEntry StringEntry
-		json.Unmarshal(body, &stringEntry)
-		fmt.Println("unmarshaled form:", stringEntry)
-		//
-		var entry budget.Entry
-		entry.EntryDate, err = time.Parse("2006-01-02", stringEntry.EntryDate)
-		if err != nil {
-			fmt.Printf("Parsing start time (%v)", err)
-			return
-		}
-		entry.Amount, err = usd.StringToUsd(stringEntry.Amount)
-		if err != nil {
-			fmt.Printf("Calling usd.StringToUsd: %v", err)
-			return
-		}
-		entry.Category = stringEntry.Category
-		entry.Description = stringEntry.Description
-		//
-		utils.Tx(s.db, r, func(tx *sql.Tx) error {
-			if err := budget.InsertEntry(tx, entry); err != nil {
-				http.Error(w, fmt.Sprintf("Calling budget.InsertEntry() (%v)", err), http.StatusInternalServerError)
-				return err
-			}
-			return nil
-		})
-		//
-		w.Header().Add("content-type", "application/json")
-		json, err := json.Marshal(entry)
-		if err != nil {
-			log.Printf("marshaling entry: %v", err)
-		}
-		if _, err := io.Copy(w, bytes.NewBuffer(json)); err != nil {
-			log.Printf("writing response: %v", err)
-		}
+		return nil
+	})
+	//
+	w.Header().Add("content-type", "application/json")
+	json, err := json.Marshal(entry)
+	if err != nil {
+		log.Printf("marshaling entry: %v", err)
+	}
+	if _, err := io.Copy(w, bytes.NewBuffer(json)); err != nil {
+		log.Printf("writing response: %v", err)
+	}
 }
 
 func main() {

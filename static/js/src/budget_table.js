@@ -6,10 +6,12 @@
 class EntryRow extends React.Component {
   render() {
     const entry = this.props.entry
+    const formattedAmount = (entry.Amount / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const formattedDate = formatDate(entry.EntryDate);
     return (
       <tr>
-        <td>{entry.EntryDate}</td>
-        <td>${entry.Amount}</td>
+        <td>{formattedDate}</td>
+        <td>{formattedAmount}</td>
         <td>{entry.Category}</td>
         <td>{entry.Description}</td>
       </tr>
@@ -21,8 +23,6 @@ class TableRows extends React.Component {
   render() {
     const rows = [];
     this.props.entries.forEach((entry, index) => {
-      entry.EntryDate = formatDate(entry.EntryDate);
-      entry.Amount = entry.Amount / 100;
       rows.push(
         <EntryRow
           entry={entry}
@@ -121,7 +121,7 @@ class EntryForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      happened_at: '',
+      entryDate: '',
       amount: '',
       category: '',
       description: ''
@@ -136,6 +136,53 @@ class EntryForm extends React.Component {
     this.setState((state) => ({
       [name]: value
     }));
+  }
+
+  handleSubmitEntry = (e) => {
+    e.preventDefault();
+    // identify form values
+    const entryDate = this.state.entryDate
+    const amount = this.state.amount
+    const category = this.state.category
+    const description = this.state.description
+
+    if ([entryDate, amount, category, description].some(i => i === '')) {
+        return;
+    }
+
+    const newEntry = {
+        EntryDate: this.state.entryDate,
+        Amount: (this.state.amount * 100).toString(),
+        Category: this.state.category,
+        Description: this.state.description
+    };
+
+    // config for POST
+    const config = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newEntry)
+    }
+    // post to db
+    fetch('/insert.json', config)
+      .then( response => response.json() )
+      .then( responseData => {
+        console.log(responseData)
+        this.props.addEntry(newEntry);
+        this.setState((state) => ({
+            entryDate: '',
+            amount: '',
+            category: '',
+            description: ''
+        }));
+      })
+      .catch( err => console.log('something went wrong...:', err) )
+
+    //
+    console.log("constructing entry ...")
+
 
   }
 
@@ -143,12 +190,12 @@ class EntryForm extends React.Component {
     return (
       <div>
         <h2>Insert a budget entry</h2>
-        <form>
-          <label className="entry-form">happened_at</label>
+        <form onSubmit={this.handleSubmitEntry}>
+          <label className="entry-form">entry date</label>
           <input
-            name="happened_at"
+            name="entryDate"
             type="text"
-            value={this.state.happened_at}
+            value={this.state.entryDate}
             onChange={this.handleInputChange} />
           <br />
           <label className="entry-form">amount</label>
@@ -165,8 +212,12 @@ class EntryForm extends React.Component {
             value={this.state.category}
             onChange={this.handleInputChange} />
           <br />
-          <label className="entry-form">amount</label>
-          <input name="description" type="text" />
+          <label className="entry-form">description</label>
+          <input
+            name="description"
+            type="text"
+            value={this.state.description}
+            onChange={this.handleInputChange} />
           <br />
           <input type="submit" value="Submit" />
         </form>
@@ -179,36 +230,48 @@ class BudgetPage extends React.Component {
   constructor() {
     super();
     this.state = {
-      jsonEntries: []
+      entries: []
     };
   }
 
-  componentDidMount() {
-    console.log("fetching budget.json ...");
-    fetch('http://localhost:8080/budget.json')
-      .then(response => response.json())
-      .then(responseData => {
-        console.log("success!");
-        console.log(responseData);
-        this.setState({ jsonEntries: responseData });
-      })
-      .catch(error => {
-        console.log('Error fetching and parsing data', error);
-      });
-  }
-
   render() {
-    if (this.state.jsonEntries.length > 0) {
+    if (this.state.entries.length > 0) {
         return (
           <div>
             <h1>welcome!</h1>
-            <EntryForm />
-            <BudgetTable entries={this.state.jsonEntries}/>
+            <EntryForm addEntry={this.handleAddEntry}/>
+            <BudgetTable entries={this.state.entries}/>
           </div>
         );
     } else {
         return (<p>waiting for entries to load...</p>);
     }
+  }
+
+  handleAddEntry = (entry) => {
+      this.setState( prevState => {
+         return {
+             entries: [
+                 ...prevState.entries,
+                 entry
+             ]
+         };
+      });
+  }
+
+  componentDidMount() {
+    console.log("fetching budget.json ...");
+    fetch('/budget.json')
+      .then(response => response.json())
+      .then(responseData => {
+        console.log("success!");
+        console.log(responseData);
+        // responseData.forEach((e) => e.Amount = e.Amount / 100);
+        this.setState({ entries: responseData });
+      })
+      .catch(error => {
+        console.log('Error fetching and parsing data', error);
+      });
   }
 }
 
@@ -225,7 +288,7 @@ function formatDate(inputDate) {
       month = '0' + month;
   }
   if (day.length < 2) {
-      month = '0' + month;
+      day = '0' + day;
   }
   return [year, month, day].join("-");
 }
