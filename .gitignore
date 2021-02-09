@@ -1,5 +1,3 @@
 db.sqlite*
-query.sql
 .DS_Store
-csv/
 tempcsv/
