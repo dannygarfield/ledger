@@ -201,6 +201,9 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	w.Header().Add("content-type", "application/json")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+    w.Header().Add("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 	out, err := json.Marshal(entries)
 	if err != nil {
 		log.Printf("marshaling entries: %v", err)
@@ -285,6 +288,8 @@ func main() {
 	http.HandleFunc("/upload_csv", s.uploadCsvHandler)
 	http.HandleFunc("/insert_ledger_entry", s.insertLedgerEntryHandler)
 	http.HandleFunc("/insert_budget_entry", s.insertBudgetEntryHandler)
-
+	//
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	//
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
