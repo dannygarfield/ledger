@@ -195,21 +195,40 @@ func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
-	startDate, endDate := utils.BigBang, time.Now().AddDate(0, 1, 0)
+	fmt.Printf("r.URL.Query()s: %v\n", r.URL.Query())
 	var entries []budget.Entry
+	var startDate time.Time
+	var endDate time.Time
 	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
+		startDate, err = myhttp.SetStartDate(tx, r.URL.Query())
+		endDate, err = myhttp.SetEndDate(tx, r.URL.Query())
 		entries, err = budget.GetBudgetEntries(tx, startDate, endDate)
 		return err
 	})
+	fmt.Println("start date from SetStartDate:", startDate)
+	//
+	group := struct {
+		Start   time.Time
+		End     time.Time
+		Entries []budget.Entry
+	}{
+		Start:   startDate,
+		End:     endDate,
+		Entries: entries,
+	}
+	//
+	output, err := json.Marshal(group)
+	if err != nil {
+		log.Printf("marshaling entries: %v", err)
+	}
+	// os.Stdout.Write(out)
+	//
 	w.Header().Add("content-type", "application/json")
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 	w.Header().Add("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-	out, err := json.Marshal(entries)
-	if err != nil {
-		log.Printf("marshaling entries: %v", err)
-	}
-	if _, err := io.Copy(w, bytes.NewBuffer(out)); err != nil {
+	//
+	if _, err := io.Copy(w, bytes.NewBuffer(output)); err != nil {
 		log.Printf("writing response: %v", err)
 	}
 }

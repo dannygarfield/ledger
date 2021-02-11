@@ -56,9 +56,8 @@ class Header extends React.Component {
 class DateFilters extends React.Component {
   constructor(props) {
     super(props);
-    const entries = this.props.entries;
-    const start = formatDate(entries[0].EntryDate);
-    const end = formatDate(entries[entries.length - 1].EntryDate);
+    const start = formatDate(this.props.startDate);
+    const end = formatDate(this.props.endDate);
 
     this.state = {
       startDate: start,
@@ -71,14 +70,19 @@ class DateFilters extends React.Component {
   handleFilterChange(e) {
     const value = e.target.value
     const name = e.target.name
-    this.setState(state => ({
+    this.setState({
         [name]: value
-    }));
+    });
+  }
+
+  handleSubmitDateFilters = (e) => {
+    console.log("inside handleSubmitDateFilters: " + this.state.startDate)
+    this.props.fetchEntries(e, `/budget.json?start=${this.state.startDate}`)
   }
 
   render() {
     return (
-      <form>
+      <form onSubmit={this.handleSubmitDateFilters}>
         <label className="filters">start:</label>
         <input
           type="date"
@@ -100,11 +104,18 @@ class DateFilters extends React.Component {
 }
 
 class BudgetTable extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+
   render() {
     return (
       <div>
         <h2>budget table</h2>
-        <DateFilters entries={this.props.entries}/>
+        <DateFilters
+          startDate={this.props.startDate}
+          endDate={this.props.endDate}
+          fetchEntries={this.props.fetchEntries}/>
         <br />
         <table>
           <Header />
@@ -133,30 +144,24 @@ class EntryForm extends React.Component {
   handleInputChange(e) {
     const name = e.target.name
     const value = e.target.value
-    this.setState((state) => ({
-      [name]: value
-    }));
+    this.setState({ [name]: value });
   }
 
   handleSubmitEntry = (e) => {
     e.preventDefault();
-    // identify form values
     const entryDate = this.state.entryDate
     const amount = this.state.amount
     const category = this.state.category
     const description = this.state.description
-
     if ([entryDate, amount, category, description].some(i => i === '')) {
         return;
     }
-
     const newEntry = {
-        EntryDate: this.state.entryDate,
-        Amount: (this.state.amount * 100).toString(),
-        Category: this.state.category,
-        Description: this.state.description
+        EntryDate: entryDate,
+        Amount: (amount * 100).toString(),
+        Category: category,
+        Description: description
     };
-
     // config for POST
     const config = {
       method: 'POST',
@@ -171,19 +176,14 @@ class EntryForm extends React.Component {
       .then( responseData => {
         console.log(responseData)
         this.props.addEntry(newEntry);
-        this.setState((state) => ({
+        this.setState({
             entryDate: '',
             amount: '',
             category: '',
             description: ''
-        }));
+        });
       })
       .catch( err => console.log('something went wrong...:', err) )
-
-    //
-    console.log("constructing entry ...")
-
-
   }
 
   render() {
@@ -227,60 +227,76 @@ class EntryForm extends React.Component {
 }
 
 class BudgetPage extends React.Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       entries: []
     };
   }
 
   render() {
-    if (this.state.entries.length > 0) {
-        return (
-          <div>
-            <h1>welcome!</h1>
-            <EntryForm addEntry={this.handleAddEntry}/>
-            <BudgetTable entries={this.state.entries}/>
-          </div>
-        );
+    if (this.state.entries.length == 0) {
+      return null;
     } else {
-        return (<p>waiting for entries to load...</p>);
+      return (
+        <div>
+          <h1>welcome!</h1>
+          <EntryForm addEntry={this.handleAddEntry}/>
+          <BudgetTable
+            startDate={this.state.startDate}
+            endDate={this.state.endDate}
+            entries={this.state.entries}
+            fetchEntries={this.handleFetchEntries}/>
+        </div>
+      );
     }
   }
 
   handleAddEntry = (entry) => {
       this.setState( prevState => {
          return {
-             entries: [
-                 ...prevState.entries,
-                 entry
-             ]
+             entries: [...prevState.entries, entry]
          };
       });
   }
 
+  handleFetchEntries = (e, fetchUrl) => {
+    e.preventDefault();
+    console.log(`fetching entries ... fetch url: ${fetchUrl}`);
+    fetch(fetchUrl)
+      .then(response => response.json())
+      .then(responseData => {
+        console.log("... success!");
+        console.log(responseData);
+        this.setState( prevState => ({
+          startDate: responseData['Start'],
+          endDate: responseData['End'],
+          entries: responseData['Entries']
+        }));
+      })
+      .catch(error => {
+        console.log('Error fetching and parsing data', error);
+      });
+  }
+
   componentDidMount() {
-    console.log("fetching budget.json ...");
+    console.log("componentDidMount. this.state.startDate:" + this.state.startDate)
     fetch('/budget.json')
       .then(response => response.json())
       .then(responseData => {
-        console.log("success!");
+        console.log("... success!");
         console.log(responseData);
-        // responseData.forEach((e) => e.Amount = e.Amount / 100);
-        this.setState({ entries: responseData });
+        this.setState( prevState => ({
+          startDate: responseData['Start'],
+          endDate: responseData['End'],
+          entries: responseData['Entries']
+        }));
       })
       .catch(error => {
         console.log('Error fetching and parsing data', error);
       });
   }
 }
-
-const ENTRIES = [
-  {EntryDate: "2021-02-01", Amount: 504.24, Category: "health", Description: "COBRA"},
-  {EntryDate: "2021-02-01", Amount: 1500.00, Category: "rent", Description: "-"},
-  {EntryDate: "2021-02-02", Amount: 180.85, Category: "groceries", Description: "DeCicco"},
-  {EntryDate: "2021-02-03", Amount: 150.00, Category: "investing", Description: "Public.com"},
-]
 
 function formatDate(inputDate) {
   let [month, day, year] = new Date(inputDate).toLocaleDateString("en-US").split("/");
@@ -294,6 +310,6 @@ function formatDate(inputDate) {
 }
 
 ReactDOM.render(
-  <BudgetPage constEntries={ENTRIES}/>,
+  <BudgetPage />,
   document.querySelector('#container')
 );

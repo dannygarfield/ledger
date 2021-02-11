@@ -148,9 +148,13 @@ var DateFilters = function (_React$Component4) {
 
     _this4.handleFilterChange = _this4.handleFilterChange.bind(_this4);
 
-    var entries = _this4.props.entries;
-    var start = formatDate(entries[0].EntryDate);
-    var end = formatDate(entries[entries.length - 1].EntryDate);
+    _this4.handleSubmitDateFilters = function (e) {
+      console.log("inside handleSubmitDateFilters: " + _this4.state.startDate);
+      _this4.props.fetchEntries(e, '/budget.json?start=' + _this4.state.startDate);
+    };
+
+    var start = formatDate(_this4.props.startDate);
+    var end = formatDate(_this4.props.endDate);
 
     _this4.state = {
       startDate: start,
@@ -164,16 +168,14 @@ var DateFilters = function (_React$Component4) {
     value: function handleFilterChange(e) {
       var value = e.target.value;
       var name = e.target.name;
-      this.setState(function (state) {
-        return _defineProperty({}, name, value);
-      });
+      this.setState(_defineProperty({}, name, value));
     }
   }, {
     key: 'render',
     value: function render() {
       return React.createElement(
         'form',
-        null,
+        { onSubmit: this.handleSubmitDateFilters },
         React.createElement(
           'label',
           { className: 'filters' },
@@ -207,10 +209,10 @@ var DateFilters = function (_React$Component4) {
 var BudgetTable = function (_React$Component5) {
   _inherits(BudgetTable, _React$Component5);
 
-  function BudgetTable() {
+  function BudgetTable(props) {
     _classCallCheck(this, BudgetTable);
 
-    return _possibleConstructorReturn(this, (BudgetTable.__proto__ || Object.getPrototypeOf(BudgetTable)).apply(this, arguments));
+    return _possibleConstructorReturn(this, (BudgetTable.__proto__ || Object.getPrototypeOf(BudgetTable)).call(this, props));
   }
 
   _createClass(BudgetTable, [{
@@ -224,7 +226,10 @@ var BudgetTable = function (_React$Component5) {
           null,
           'budget table'
         ),
-        React.createElement(DateFilters, { entries: this.props.entries }),
+        React.createElement(DateFilters, {
+          startDate: this.props.startDate,
+          endDate: this.props.endDate,
+          fetchEntries: this.props.fetchEntries }),
         React.createElement('br', null),
         React.createElement(
           'table',
@@ -253,25 +258,21 @@ var EntryForm = function (_React$Component6) {
 
     _this6.handleSubmitEntry = function (e) {
       e.preventDefault();
-      // identify form values
       var entryDate = _this6.state.entryDate;
       var amount = _this6.state.amount;
       var category = _this6.state.category;
       var description = _this6.state.description;
-
       if ([entryDate, amount, category, description].some(function (i) {
         return i === '';
       })) {
         return;
       }
-
       var newEntry = {
-        EntryDate: _this6.state.entryDate,
-        Amount: (_this6.state.amount * 100).toString(),
-        Category: _this6.state.category,
-        Description: _this6.state.description
+        EntryDate: entryDate,
+        Amount: (amount * 100).toString(),
+        Category: category,
+        Description: description
       };
-
       // config for POST
       var config = {
         method: 'POST',
@@ -285,20 +286,15 @@ var EntryForm = function (_React$Component6) {
       }).then(function (responseData) {
         console.log(responseData);
         _this6.props.addEntry(newEntry);
-        _this6.setState(function (state) {
-          return {
-            entryDate: '',
-            amount: '',
-            category: '',
-            description: ''
-          };
+        _this6.setState({
+          entryDate: '',
+          amount: '',
+          category: '',
+          description: ''
         });
       }).catch(function (err) {
         return console.log('something went wrong...:', err);
       });
-
-      //
-      console.log("constructing entry ...");
     };
 
     _this6.state = {
@@ -315,9 +311,7 @@ var EntryForm = function (_React$Component6) {
     value: function handleInputChange(e) {
       var name = e.target.name;
       var value = e.target.value;
-      this.setState(function (state) {
-        return _defineProperty({}, name, value);
-      });
+      this.setState(_defineProperty({}, name, value));
     }
   }, {
     key: 'render',
@@ -389,16 +383,36 @@ var EntryForm = function (_React$Component6) {
 var BudgetPage = function (_React$Component7) {
   _inherits(BudgetPage, _React$Component7);
 
-  function BudgetPage() {
+  function BudgetPage(props) {
     _classCallCheck(this, BudgetPage);
 
-    var _this7 = _possibleConstructorReturn(this, (BudgetPage.__proto__ || Object.getPrototypeOf(BudgetPage)).call(this));
+    var _this7 = _possibleConstructorReturn(this, (BudgetPage.__proto__ || Object.getPrototypeOf(BudgetPage)).call(this, props));
 
     _this7.handleAddEntry = function (entry) {
       _this7.setState(function (prevState) {
         return {
           entries: [].concat(_toConsumableArray(prevState.entries), [entry])
         };
+      });
+    };
+
+    _this7.handleFetchEntries = function (e, fetchUrl) {
+      e.preventDefault();
+      console.log('fetching entries ... fetch url: ' + fetchUrl);
+      fetch(fetchUrl).then(function (response) {
+        return response.json();
+      }).then(function (responseData) {
+        console.log("... success!");
+        console.log(responseData);
+        _this7.setState(function (prevState) {
+          return {
+            startDate: responseData['Start'],
+            endDate: responseData['End'],
+            entries: responseData['Entries']
+          };
+        });
+      }).catch(function (error) {
+        console.log('Error fetching and parsing data', error);
       });
     };
 
@@ -411,7 +425,9 @@ var BudgetPage = function (_React$Component7) {
   _createClass(BudgetPage, [{
     key: 'render',
     value: function render() {
-      if (this.state.entries.length > 0) {
+      if (this.state.entries.length == 0) {
+        return null;
+      } else {
         return React.createElement(
           'div',
           null,
@@ -421,13 +437,11 @@ var BudgetPage = function (_React$Component7) {
             'welcome!'
           ),
           React.createElement(EntryForm, { addEntry: this.handleAddEntry }),
-          React.createElement(BudgetTable, { entries: this.state.entries })
-        );
-      } else {
-        return React.createElement(
-          'p',
-          null,
-          'waiting for entries to load...'
+          React.createElement(BudgetTable, {
+            startDate: this.state.startDate,
+            endDate: this.state.endDate,
+            entries: this.state.entries,
+            fetchEntries: this.handleFetchEntries })
         );
       }
     }
@@ -436,14 +450,19 @@ var BudgetPage = function (_React$Component7) {
     value: function componentDidMount() {
       var _this8 = this;
 
-      console.log("fetching budget.json ...");
+      console.log("componentDidMount. this.state.startDate:" + this.state.startDate);
       fetch('/budget.json').then(function (response) {
         return response.json();
       }).then(function (responseData) {
-        console.log("success!");
+        console.log("... success!");
         console.log(responseData);
-        // responseData.forEach((e) => e.Amount = e.Amount / 100);
-        _this8.setState({ entries: responseData });
+        _this8.setState(function (prevState) {
+          return {
+            startDate: responseData['Start'],
+            endDate: responseData['End'],
+            entries: responseData['Entries']
+          };
+        });
       }).catch(function (error) {
         console.log('Error fetching and parsing data', error);
       });
@@ -452,8 +471,6 @@ var BudgetPage = function (_React$Component7) {
 
   return BudgetPage;
 }(React.Component);
-
-var ENTRIES = [{ EntryDate: "2021-02-01", Amount: 504.24, Category: "health", Description: "COBRA" }, { EntryDate: "2021-02-01", Amount: 1500.00, Category: "rent", Description: "-" }, { EntryDate: "2021-02-02", Amount: 180.85, Category: "groceries", Description: "DeCicco" }, { EntryDate: "2021-02-03", Amount: 150.00, Category: "investing", Description: "Public.com" }];
 
 function formatDate(inputDate) {
   var _toLocaleDateString$s = new Date(inputDate).toLocaleDateString("en-US").split("/"),
@@ -471,4 +488,4 @@ function formatDate(inputDate) {
   return [year, month, day].join("-");
 }
 
-ReactDOM.render(React.createElement(BudgetPage, { constEntries: ENTRIES }), document.querySelector('#container'));
+ReactDOM.render(React.createElement(BudgetPage, null), document.querySelector('#container'));
