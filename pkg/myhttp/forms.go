@@ -11,7 +11,7 @@ import (
 )
 
 func SetStartDate(tx *sql.Tx, values url.Values) (time.Time, error) {
-	formStart := values.Get("start")
+	formStart := values.Get("startDate")
 	if formStart != "" && formStart != "undefined" {
 		start, err := time.Parse("2006-01-02", formStart)
 		if err != nil {
@@ -29,7 +29,7 @@ func SetStartDate(tx *sql.Tx, values url.Values) (time.Time, error) {
 }
 
 func SetEndDate(tx *sql.Tx, values url.Values) (time.Time, error) {
-	formEnd := values.Get("end")
+	formEnd := values.Get("endDate")
 	if formEnd != "" && formEnd != "undefined"{
 		end, err := time.Parse("2006-01-02", formEnd)
 		if err != nil {

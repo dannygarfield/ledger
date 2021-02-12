@@ -146,36 +146,33 @@ var DateFilters = function (_React$Component4) {
 
     var _this4 = _possibleConstructorReturn(this, (DateFilters.__proto__ || Object.getPrototypeOf(DateFilters)).call(this, props));
 
-    _this4.handleFilterChange = _this4.handleFilterChange.bind(_this4);
-
-    _this4.handleSubmitDateFilters = function (e) {
-      console.log("inside handleSubmitDateFilters: " + _this4.state.startDate);
-      _this4.props.fetchEntries(e, '/budget.json?start=' + _this4.state.startDate);
-    };
-
-    var start = formatDate(_this4.props.startDate);
-    var end = formatDate(_this4.props.endDate);
-
-    _this4.state = {
-      startDate: start,
-      endDate: end
-    };
+    _this4.handleStartChange = _this4.handleStartChange.bind(_this4);
+    _this4.handleEndChange = _this4.handleEndChange.bind(_this4);
     return _this4;
   }
 
   _createClass(DateFilters, [{
-    key: 'handleFilterChange',
-    value: function handleFilterChange(e) {
+    key: 'handleStartChange',
+    value: function handleStartChange(e) {
       var value = e.target.value;
-      var name = e.target.name;
-      this.setState(_defineProperty({}, name, value));
+      var endDate = formatDate(this.props.endDate);
+      this.props.fetchEntries(e, '/budget.json?startDate=' + value + '&endDate=' + endDate);
+    }
+  }, {
+    key: 'handleEndChange',
+    value: function handleEndChange(e) {
+      var value = e.target.value;
+      var startDate = formatDate(this.props.startDate);
+      this.props.fetchEntries(e, '/budget.json?startDate=' + startDate + '&endDate=' + value);
     }
   }, {
     key: 'render',
     value: function render() {
+      var startDate = formatDate(this.props.startDate);
+      var endDate = formatDate(this.props.endDate);
       return React.createElement(
         'form',
-        { onSubmit: this.handleSubmitDateFilters },
+        null,
         React.createElement(
           'label',
           { className: 'filters' },
@@ -184,8 +181,8 @@ var DateFilters = function (_React$Component4) {
         React.createElement('input', {
           type: 'date',
           name: 'startDate',
-          value: this.state.startDate,
-          onChange: this.handleFilterChange }),
+          value: startDate,
+          onChange: this.handleStartChange }),
         React.createElement('br', null),
         React.createElement(
           'label',
@@ -195,8 +192,8 @@ var DateFilters = function (_React$Component4) {
         React.createElement('input', {
           type: 'date',
           name: 'endDate',
-          value: this.state.endDate,
-          onChange: this.handleFilterChange }),
+          value: endDate,
+          onChange: this.handleEndChange }),
         React.createElement('br', null),
         React.createElement('input', { type: 'submit', value: 'Submit' })
       );

@@ -56,46 +56,41 @@ class Header extends React.Component {
 class DateFilters extends React.Component {
   constructor(props) {
     super(props);
-    const start = formatDate(this.props.startDate);
-    const end = formatDate(this.props.endDate);
-
-    this.state = {
-      startDate: start,
-      endDate: end
-    };
   }
 
-  handleFilterChange = this.handleFilterChange.bind(this);
+  handleStartChange = this.handleStartChange.bind(this);
+  handleEndChange = this.handleEndChange.bind(this);
 
-  handleFilterChange(e) {
-    const value = e.target.value
-    const name = e.target.name
-    this.setState({
-        [name]: value
-    });
+  handleStartChange(e) {
+    const value = e.target.value;
+    const endDate = formatDate(this.props.endDate);
+    this.props.fetchEntries(e, `/budget.json?startDate=${value}&endDate=${endDate}`)
   }
 
-  handleSubmitDateFilters = (e) => {
-    console.log("inside handleSubmitDateFilters: " + this.state.startDate)
-    this.props.fetchEntries(e, `/budget.json?start=${this.state.startDate}`)
+  handleEndChange(e) {
+    const value = e.target.value;
+    const startDate = formatDate(this.props.startDate);
+    this.props.fetchEntries(e, `/budget.json?startDate=${startDate}&endDate=${value}`)
   }
 
   render() {
+    const startDate = formatDate(this.props.startDate);
+    const endDate = formatDate(this.props.endDate);
     return (
-      <form onSubmit={this.handleSubmitDateFilters}>
+      <form>
         <label className="filters">start:</label>
         <input
           type="date"
           name="startDate"
-          value={this.state.startDate}
-          onChange={this.handleFilterChange} />
+          value={startDate}
+          onChange={this.handleStartChange} />
         <br />
         <label className="filters">end:</label>
         <input
           type="date"
           name="endDate"
-          value={this.state.endDate}
-          onChange={this.handleFilterChange} />
+          value={endDate}
+          onChange={this.handleEndChange} />
         <br />
         <input type="submit" value="Submit" />
       </form>
