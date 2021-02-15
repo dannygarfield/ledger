@@ -9,40 +9,6 @@ import (
 	"time"
 )
 
-func HandleBudgetList(tx *sql.Tx, r *http.Request, w http.ResponseWriter) error {
-	r.ParseForm()
-	// set start date
-	startDate, err := SetStartDate(tx, r.Form)
-	if err != nil {
-		return fmt.Errorf("Calling SetStartDate: %v", err)
-	}
-	// set end date
-	endDate, err := SetEndDate(tx, r.Form)
-	if err != nil {
-		return fmt.Errorf("Calling SetEndDate: %v", err)
-	}
-	// get budget entries
-	budgetEntries, err := budget.GetBudgetEntries(tx, startDate, endDate)
-	if err != nil {
-		return fmt.Errorf("Calling budget.GetBudgetEntries() (%v)", err)
-	}
-	// construct data for html template
-	htmlTemplateData := struct {
-		Start, End time.Time
-		BudgetList []budget.Entry
-	}{
-		startDate,
-		endDate,
-		budgetEntries,
-	}
-	// call template function
-	err = mytemplate.BudgetList(w, htmlTemplateData)
-	if err != nil {
-		return fmt.Errorf("Could not call mytemplate.BudgetList: %v", err)
-	}
-	return nil
-}
-
 func HandleBudgetOverTime(tx *sql.Tx, r *http.Request, w http.ResponseWriter) error {
 	r.ParseForm()
 	// set start date

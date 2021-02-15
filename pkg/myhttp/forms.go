@@ -30,7 +30,7 @@ func SetStartDate(tx *sql.Tx, values url.Values) (time.Time, error) {
 
 func SetEndDate(tx *sql.Tx, values url.Values) (time.Time, error) {
 	formEnd := values.Get("endDate")
-	if formEnd != "" && formEnd != "undefined"{
+	if formEnd != "" && formEnd != "undefined" {
 		end, err := time.Parse("2006-01-02", formEnd)
 		if err != nil {
 			return utils.BigBang, fmt.Errorf("Parsing time (%v)", err)

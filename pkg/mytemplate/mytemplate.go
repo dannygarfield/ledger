@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
-	"ledger/pkg/budget"
 	"ledger/pkg/ledger"
 	"net/http"
 	"strconv"
@@ -180,19 +179,6 @@ func LedgerOverTime(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func BudgetList(w http.ResponseWriter, templateData interface{}) error {
-	// parse html template
-	t, err := template.ParseFiles("pkg/mytemplate/budget.html")
-	if err != nil {
-		return fmt.Errorf("Could not parse budget.html (%v)", err)
-	}
-	// execute template
-	if err = t.Execute(w, templateData); err != nil {
-		return fmt.Errorf("Could not Execute template (%v)", err)
-	}
-	return nil
-}
-
 func BudgetOverTime(w http.ResponseWriter, templateData interface{}) error {
 	// parse html template
 	t, err := template.ParseFiles("pkg/mytemplate/budgetseries.html")
@@ -201,80 +187,6 @@ func BudgetOverTime(w http.ResponseWriter, templateData interface{}) error {
 	}
 	// execute template
 	if err = t.Execute(w, templateData); err != nil {
-		return fmt.Errorf("Could not Execute template (%v)", err)
-	}
-	return nil
-}
-
-// display the budget over time, grouped into a given interval period
-func BudgetOverTime2(tx *sql.Tx, w http.ResponseWriter, r *http.Request) error {
-	// parse html template
-	t, err := template.ParseFiles("pkg/mytemplate/budgetseries.html")
-	if err != nil {
-		return fmt.Errorf("Could not parse budgetseries.html (%v)", err)
-	}
-	// parse html form
-	r.ParseForm()
-	r.Form.Get("categories")
-
-	formStart := r.PostForm["start"]
-	formEnd := r.PostForm["end"]
-	formCategories := r.PostForm["categories"]
-	formInterval := r.PostForm["interval"]
-	// set start date
-	start, err := budget.GetEarliestBudgetDate(tx)
-	if err != nil {
-		return fmt.Errorf("Calling budget.GetEarliestBudgetDate() (%v)", err)
-	}
-	if len(formStart) > 0 && formStart[0] != "" {
-		start, err = time.Parse("2006-01-02", r.PostForm["start"][0])
-		if err != nil {
-			return fmt.Errorf("Parsing start time (%v)", err)
-		}
-	}
-	// set end date
-	end, err := budget.GetLatestBudgetDate(tx)
-	if err != nil {
-		return fmt.Errorf("Calling budget.GetLatestBudgetDate() (%v)", err)
-	}
-	if len(formEnd) > 0 && formEnd[0] != "" {
-		end, err = time.Parse("2006-01-02", r.PostForm["end"][0])
-		if err != nil {
-			return fmt.Errorf("Parsing end time (%v)", err)
-		}
-	}
-	// set interval
-	interval := 7
-	if len(formInterval) > 0 && formInterval[0] != "" {
-		interval, err = strconv.Atoi(formInterval[0])
-		if err != nil {
-			return fmt.Errorf("calling strconv.Atoi() (%v)", err)
-		}
-	}
-	// get all categories
-	allCategories, err := budget.GetCategories(tx)
-	if err != nil {
-		return fmt.Errorf("Calling ledger.GetBuckets() (%v)", err)
-	}
-	// if we don't get buckets from user input, show all buckets
-	if len(formCategories) == 0 {
-		formCategories = allCategories
-	}
-	// get summary data and format for html
-	summary, err := budget.SummarizeSpendsOverTime(tx, formCategories, start, end, interval)
-	if err != nil {
-		return fmt.Errorf("Calling ledger.SummarizeBalanceOverTime (%v)", err)
-	}
-	plot := budget.MakePlot(summary, start, interval)
-	data := struct {
-		AllBuckets []string
-		Plot       budget.PlotData
-	}{
-		allCategories,
-		*plot,
-	}
-	// execute template
-	if err = t.Execute(w, data); err != nil {
 		return fmt.Errorf("Could not Execute template (%v)", err)
 	}
 	return nil

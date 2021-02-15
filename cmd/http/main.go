@@ -146,16 +146,6 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	mytemplate.Insert(w, r)
 }
 
-func (s *server) handleBudgetList(w http.ResponseWriter, r *http.Request) {
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		err := myhttp.HandleBudgetList(tx, r, w)
-		if err != nil {
-			return fmt.Errorf("Calling myhttp.HandleBudgetList (%v)", err)
-		}
-		return nil
-	})
-}
-
 func (s *server) handleBudgetOverTime(w http.ResponseWriter, r *http.Request) {
 	utils.Tx(s.db, r, func(tx *sql.Tx) error {
 		err := myhttp.HandleBudgetOverTime(tx, r, w)
@@ -184,18 +174,7 @@ func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) dataHandler(w http.ResponseWriter, r *http.Request) {
-	jsonData, err := json.Marshal(struct{ Color string }{Color: "darksalmon"})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Could not call json.Marshal: %v", err), http.StatusInternalServerError)
-	}
-	if _, err := w.Write(jsonData); err != nil {
-		fmt.Printf("Could not write to response: %v", err)
-	}
-}
-
 func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("r.URL.Query()s: %v\n", r.URL.Query())
 	var entries []budget.Entry
 	var startDate time.Time
 	var endDate time.Time
@@ -205,7 +184,6 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 		entries, err = budget.GetBudgetEntries(tx, startDate, endDate)
 		return err
 	})
-	fmt.Println("start date from SetStartDate:", startDate)
 	//
 	group := struct {
 		Start   time.Time
@@ -234,7 +212,6 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("inserting via json")
 	type StringEntry struct {
 		EntryDate   string
 		Amount      string
@@ -250,7 +227,6 @@ func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
 	//
 	var stringEntry StringEntry
 	json.Unmarshal(body, &stringEntry)
-	fmt.Println("unmarshaled form:", stringEntry)
 	//
 	var entry budget.Entry
 	entry.EntryDate, err = time.Parse("2006-01-02", stringEntry.EntryDate)
@@ -294,11 +270,9 @@ func main() {
 	s := &server{db: db}
 	//
 	http.HandleFunc("/app", s.appHandler)
-	http.HandleFunc("/data", s.dataHandler)
 	http.HandleFunc("/budget.json", s.getBudget)
 	http.HandleFunc("/insert.json", s.insertBudgetViaJson)
 	//
-	http.HandleFunc("/budget", s.handleBudgetList)
 	http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
 	//
 	http.HandleFunc("/ledger", s.ledgerHandler)
