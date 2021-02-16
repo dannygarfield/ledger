@@ -75,24 +75,6 @@ func (s *server) ledgerOverTimeHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *server) insertBudgetEntryHandler(w http.ResponseWriter, r *http.Request) {
-	entry, err := budget.PrepareEntryForInsert(r)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Calling budget.PrepareEntryForInsert() (%v)", err), http.StatusInternalServerError)
-		return
-	}
-
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		if err := budget.InsertEntry(tx, entry); err != nil {
-			http.Error(w, fmt.Sprintf("Calling budget.InsertEntry() (%v)", err), http.StatusInternalServerError)
-			return err
-		}
-		return nil
-	})
-	// mytemplate.Insert(w, r)
-	s.ledgerHandler(w, r)
-}
-
 // insert by CSV
 func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(10 << 20) // max upload 10mb
@@ -147,10 +129,10 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // begin react handlers
-func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleBudgetTrends(w http.ResponseWriter, r *http.Request) {
 	err := func() error {
 		// parse html template
-		t, err := template.ParseFiles("pkg/mytemplate/app.html")
+		t, err := template.ParseFiles("pkg/mytemplate/budget_trends.html")
 		if err != nil {
 			return fmt.Errorf("Could not parse app.html (%v)", err)
 		}
@@ -165,7 +147,26 @@ func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
+// begin react handlers
+func (s *server) handleBudgetEntries(w http.ResponseWriter, r *http.Request) {
+	err := func() error {
+		// parse html template
+		t, err := template.ParseFiles("pkg/mytemplate/budget_entries.html")
+		if err != nil {
+			return fmt.Errorf("Could not parse app.html (%v)", err)
+		}
+		// execute template
+		if err = t.Execute(w, nil); err != nil {
+			return fmt.Errorf("Could not execute html template")
+		}
+		return nil
+	}()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Could not handle route /app: %v", err), http.StatusInternalServerError)
+	}
+}
+
+func (s *server) handleBudgetEntriesJson(w http.ResponseWriter, r *http.Request) {
 	var entries []budget.Entry
 	var startDate time.Time
 	var endDate time.Time
@@ -203,7 +204,7 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 }
 
 // get budget over time
-func (s *server) getBudgetSeries(w http.ResponseWriter, r *http.Request) {
+func (s *server) handleBudgetTrendsJson(w http.ResponseWriter, r *http.Request) {
 	// allocate variables
 	var startDate time.Time
 	var endDate time.Time
@@ -313,10 +314,12 @@ func main() {
 	//
 	s := &server{db: db}
 	//
-	http.HandleFunc("/app", s.appHandler)
-	http.HandleFunc("/budget.json", s.getBudget)
-	http.HandleFunc("/budgetseries.json", s.getBudgetSeries)
+	http.HandleFunc("/budget-entries", s.handleBudgetEntries)
+	http.HandleFunc("/budget-entries.json", s.handleBudgetEntriesJson)
+	http.HandleFunc("/budget-trends", s.handleBudgetTrends)
+	http.HandleFunc("/budget-trends.json", s.handleBudgetTrendsJson)
 	http.HandleFunc("/insert.json", s.insertBudgetViaJson)
+
 	//
 	// http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
 	//
@@ -327,7 +330,6 @@ func main() {
 	http.HandleFunc("/insert", mytemplate.Insert)
 	http.HandleFunc("/upload_csv", s.uploadCsvHandler)
 	http.HandleFunc("/insert_ledger_entry", s.insertLedgerEntryHandler)
-	http.HandleFunc("/insert_budget_entry", s.insertBudgetEntryHandler)
 	//
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	//
