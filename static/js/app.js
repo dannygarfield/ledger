@@ -580,28 +580,149 @@ var IntervalFilter = function (_React$Component10) {
 var Filters = function (_React$Component11) {
   _inherits(Filters, _React$Component11);
 
-  function Filters() {
+  function Filters(props) {
     _classCallCheck(this, Filters);
 
-    return _possibleConstructorReturn(this, (Filters.__proto__ || Object.getPrototypeOf(Filters)).apply(this, arguments));
+    var _this11 = _possibleConstructorReturn(this, (Filters.__proto__ || Object.getPrototypeOf(Filters)).call(this, props));
+
+    _this11.handleStartChange = _this11.handleStartChange.bind(_this11);
+    _this11.handleEndChange = _this11.handleEndChange.bind(_this11);
+    _this11.handleCategoryChange = _this11.handleCategoryChange.bind(_this11);
+    _this11.createQueryString = _this11.createQueryString.bind(_this11);
+    // this.handleIntervalChange = this.handleIntervalChange.bind(this);
+
+    _this11.handleChange = _this11.handleChange.bind(_this11);
+    return _this11;
   }
 
   _createClass(Filters, [{
     key: 'render',
     value: function render() {
+      var startDate = formatDate(this.props.startDate);
+      var endDate = formatDate(this.props.endDate);
+      var cats = this.props.selectedCategories;
+      var categoryRows = [];
+      this.props.allCategories.forEach(function (cat, index) {
+        var selectedClass = cats.includes(cat) ? "selected" : null;
+        categoryRows.push(React.createElement(Category, {
+          key: index,
+          name: cat,
+          selectedClass: selectedClass }));
+      });
+
       return React.createElement(
-        'div',
+        'form',
         null,
-        React.createElement(DateFilters, {
-          startDate: this.props.startDate,
-          endDate: this.props.endDate,
-          fetchData: this.props.fetchData }),
-        React.createElement(CategoryFilter, {
-          selectedCategories: this.props.selectedCategories,
-          allCategories: this.props.allCategories,
-          fetchData: this.props.fetchData }),
-        React.createElement(IntervalFilter, null)
+        React.createElement(
+          'label',
+          { className: 'filters' },
+          'start:'
+        ),
+        React.createElement('input', {
+          type: 'date',
+          name: 'startDate',
+          value: startDate,
+          onChange: this.handleChange }),
+        React.createElement(
+          'label',
+          { className: 'filters' },
+          'end:'
+        ),
+        React.createElement('input', {
+          type: 'date',
+          name: 'endDate',
+          value: endDate,
+          onChange: this.handleChange }),
+        React.createElement(
+          'label',
+          null,
+          'Choose categories'
+        ),
+        React.createElement(
+          'select',
+          {
+            className: 'categories',
+            name: 'categories',
+            multiple: true,
+            value: this.props.selectedCategories,
+            size: 10,
+            onChange: this.handleChange },
+          categoryRows
+        ),
+        React.createElement(
+          'label',
+          null,
+          'Interval'
+        ),
+        React.createElement('input', {
+          type: 'number',
+          value: this.props.interval,
+          name: 'interval',
+          onChange: this.handleChange })
       );
+    }
+  }, {
+    key: 'createQueryString',
+    value: function createQueryString(name, value) {
+      var startDate = name == 'startDate' ? value : formatDate(this.props.startDate);
+      var endDate = name == 'endDate' ? value : formatDate(this.props.endDate);
+      var interval = name == 'interval' ? value : this.props.interval;
+      // let selectedCategories = this.props.selectedCategories;
+      var categories = this.props.selectedCategories;
+
+      if (name == 'categories' && categories.includes(value)) {
+        categories = categories.filter(function (c) {
+          return c != value;
+        });
+      } else if (name == 'categories') {
+        categories.push(value);
+      }
+      categories = categories.join("&categories=");
+      var q = '?startDate=' + startDate + '&endDate=' + endDate + '&interval=' + interval + '&categories=' + categories;
+      return q;
+    }
+  }, {
+    key: 'handleChange',
+    value: function handleChange(e) {
+      var name = e.target.name;
+      var value = e.target.value;
+      console.log('name: ' + name);
+      var queryString = this.createQueryString(name, value);
+      console.log(queryString);
+      this.props.fetchData(e, queryString);
+    }
+  }, {
+    key: 'handleStartChange',
+    value: function handleStartChange(e) {
+      var name = e.target.name;
+      var value = e.target.value;
+      var endDate = formatDate(this.props.endDate);
+      this.props.fetchData(e, '?startDate=' + value + '&endDate=' + endDate);
+    }
+  }, {
+    key: 'handleEndChange',
+    value: function handleEndChange(e) {
+      var name = e.target.name;
+      var value = e.target.value;
+      var startDate = formatDate(this.props.startDate);
+      this.props.fetchData(e, '?startDate=' + startDate + '&endDate=' + value);
+    }
+  }, {
+    key: 'handleCategoryChange',
+    value: function handleCategoryChange(e) {
+      var value = e.target.value;
+      var cats = this.props.selectedCategories;
+      var selected = cats.includes(value);
+      if (selected) {
+        cats = cats.filter(function (c) {
+          return c != value;
+        });
+      } else {
+        cats.push(value);
+      }
+      var queryString = cats.join("&categories=");
+      console.log(queryString);
+      this.props.fetchData(e, '?categories=' + queryString);
     }
   }]);
 
@@ -632,6 +753,7 @@ var BudgetOverTimePage = function (_React$Component12) {
           return {
             startDate: responseData['StartDate'],
             endDate: responseData['EndDate'],
+            interval: responseData['TimeInterval'],
             allCategories: responseData['AllCategories'],
             selectedCategories: responseData['Table']['BucketHeaders'],
             queryString: queryString,
@@ -666,6 +788,7 @@ var BudgetOverTimePage = function (_React$Component12) {
         React.createElement(Filters, {
           startDate: this.state.startDate,
           endDate: this.state.endDate,
+          interval: this.state.interval,
           selectedCategories: this.state.selectedCategories,
           allCategories: this.state.allCategories,
           fetchData: this.handleFetchBudgetOverTime })

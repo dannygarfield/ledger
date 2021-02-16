@@ -225,15 +225,17 @@ func (s *server) getBudgetSeries(w http.ResponseWriter, r *http.Request) {
 
 	//
 	group := struct {
-		StartDate time.Time
-		EndDate   time.Time
+		StartDate     time.Time
+		EndDate       time.Time
+		TimeInterval  int
 		AllCategories []string
-		Table   budget.PlotData
+		Table         budget.PlotData
 	}{
-		StartDate: startDate,
-		EndDate:   endDate,
-		AllCategories:   allCategories,
-		Table: *budgetOverTimeTable,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		TimeInterval:  timeInterval,
+		AllCategories: allCategories,
+		Table:         *budgetOverTimeTable,
 	}
 	//
 	output, err := json.Marshal(group)
