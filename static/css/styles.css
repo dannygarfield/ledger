@@ -19,9 +19,6 @@ input[type=text] {
 input[type=submit] {
     margin-top: 8px;
 }
-h1 {
-  margin-top:32px;
-}
 h2 {
     margin-top: 1.5em;
 }
@@ -31,9 +28,7 @@ h2 {
   margin-bottom: 8px;
 }
 .filters {
-    display: inline-block;;
     margin-bottom: 8px;
-    width: 50px;
 }
 select[multiple] {
     vertical-align: text-top;

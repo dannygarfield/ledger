@@ -22,13 +22,15 @@ class EntryRow extends React.Component {
 class TableRows extends React.Component {
   render() {
     const rows = [];
-    this.props.entries.forEach((entry, index) => {
-      rows.push(
-        <EntryRow
-          entry={entry}
-          key={index} />
-      );
-    });
+    if (this.props.entries) {
+      this.props.entries.forEach((entry, index) => {
+        rows.push(
+          <EntryRow
+            entry={entry}
+            key={index} />
+        );
+      });
+    }
 
     return (
         <tbody>
@@ -41,12 +43,20 @@ class TableRows extends React.Component {
 class Header extends React.Component {
   render() {
     return (
+      <th>{this.props.name}</th>
+    );
+  }
+}
+
+class HeaderRow extends React.Component {
+  render() {
+    const headers = this.props.headers.map(h =>
+      <Header key={h} name={h} />
+    );
+    return (
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Category</th>
-          <th>Description</th>
+          {headers}
         </tr>
       </thead>
     );
@@ -98,20 +108,12 @@ class DateFilters extends React.Component {
 class BudgetTable extends React.Component {
   render() {
     return (
-      <div>
-        <h2>budget table</h2>
-        <DateFilters
-          startDate={this.props.startDate}
-          endDate={this.props.endDate}
-          fetchData={this.props.fetchEntries} />
-        <br />
-        <table>
-          <Header />
-          <TableRows
-            entries={this.props.entries}
-          />
-        </table>
-      </div>
+      <table>
+        <HeaderRow headers={this.props.headers}/>
+        <TableRows
+          entries={this.props.entries}
+        />
+      </table>
     );
   }
 }
@@ -217,26 +219,35 @@ class BudgetPage extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      entries: []
+      entries: [],
+      startDate: new Date(),
+      endDate: new Date()
     };
   }
 
   render() {
-    if (this.state.entries.length == 0) {
-      return null;
-    } else {
-      return (
-        <div>
-          <h1>Budget Entries</h1>
-          <EntryForm addEntry={this.handleAddEntry}/>
-          <BudgetTable
-            startDate={this.state.startDate}
-            endDate={this.state.endDate}
-            entries={this.state.entries}
-            fetchEntries={this.handleFetchEntries}/>
-        </div>
-      );
+    const headers = ['EntryDate', 'Amount', 'Category', 'Description']
+    let entries;
+    if (this.state.entries && this.state.entries.length > 0) {
+      entries =  this.state.entries;
     }
+
+    return (
+      <div>
+        <h1>Budget Entries</h1>
+        <EntryForm addEntry={this.handleAddEntry}/>
+        <DateFilters
+          startDate={this.state.startDate}
+          endDate={this.state.endDate}
+          fetchData={this.handleFetchEntries} />
+        <BudgetTable
+          startDate={this.state.startDate}
+          endDate={this.state.endDate}
+          entries={entries}
+          headers={headers}
+          fetchEntries={this.handleFetchEntries}/>
+      </div>
+    );
   }
 
   handleAddEntry = (entry) => {
@@ -283,85 +294,10 @@ class Category extends React.Component {
   }
 }
 
-class CategoryFilter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleCategoryChange = this.handleCategoryChange.bind(this);
-  }
-
-  render() {
-    const cats = this.props.selectedCategories;
-    const categoryRows = []
-    this.props.allCategories.forEach((cat, index) => {
-      let selectedClass = cats.includes(cat) ? "selected" : null;
-      categoryRows.push(
-        <Category
-          key={index}
-          name={cat}
-          selectedClass={selectedClass} />
-      );
-    });
-    return (
-      <form>
-        <label>Choose categories</label>
-        <select
-          className='categories'
-          multiple={true}
-          value={this.props.selectedCategories}
-          size={10}
-          onChange={this.handleCategoryChange}>
-        {categoryRows}
-        </select>
-      </form>
-    )
-  }
-
-  handleCategoryChange(e) {
-    const value = e.target.value;
-    let cats = this.props.selectedCategories;
-    const selected = cats.includes(value);
-    if (selected) {
-      cats = cats.filter(c => c != value);
-    } else {
-      cats.push(value);
-    }
-    const queryString = cats.join("&categories=");
-    console.log(queryString);
-    this.props.fetchData(e, `?categories=${queryString}`)
-  }
-}
-
-class IntervalFilter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleChange = this.handleChange.bind(this);
-  }
-
-  render() {
-    return (
-      <form>
-        <label>Interval</label>
-        <input type="number" value={this.props.interval}></input>
-      </form>
-    );
-  }
-
-  handleChange(e) {
-    const value = e.target.value;
-    console.log(e)
-  }
-
-}
-
 class Filters extends React.Component {
   constructor(props) {
     super(props);
-    this.handleStartChange = this.handleStartChange.bind(this);
-    this.handleEndChange = this.handleEndChange.bind(this);
-    this.handleCategoryChange = this.handleCategoryChange.bind(this);
     this.createQueryString = this.createQueryString.bind(this);
-    // this.handleIntervalChange = this.handleIntervalChange.bind(this);
-
     this.handleChange = this.handleChange.bind(this);
   }
 
@@ -382,21 +318,25 @@ class Filters extends React.Component {
 
     return (
       <form>
-        <label className="filters">start:</label>
+        <label>start:</label>
         <input
           type='date'
           name='startDate'
+          className="filters"
           value={startDate}
           onChange={this.handleChange} />
-        <label className='filters'>end:</label>
+        <br></br>
+        <label>end:</label>
         <input
           type='date'
           name='endDate'
+          className="filters"
           value={endDate}
           onChange={this.handleChange} />
+        <br></br>
         <label>Choose categories</label>
         <select
-          className='categories'
+          className='categories filters'
           name='categories'
           multiple={true}
           value={this.props.selectedCategories}
@@ -404,10 +344,12 @@ class Filters extends React.Component {
           onChange={this.handleChange} >
           {categoryRows}
         </select>
+        <br></br>
         <label>Interval</label>
         <input
           type='number'
           value={this.props.interval}
+          className="filters"
           name='interval'
           onChange={this.handleChange} />
       </form>
@@ -418,7 +360,6 @@ class Filters extends React.Component {
     let startDate = (name == 'startDate') ? value : formatDate(this.props.startDate);
     let endDate = (name == 'endDate') ? value : formatDate(this.props.endDate);
     let interval = (name == 'interval') ? value : this.props.interval;
-    // let selectedCategories = this.props.selectedCategories;
     let categories = this.props.selectedCategories;
 
     if (name == 'categories' && categories.includes(value)) {
@@ -434,40 +375,9 @@ class Filters extends React.Component {
   handleChange(e) {
     const name = e.target.name;
     const value = e.target.value;
-    console.log('name: ' + name)
     const queryString = this.createQueryString(name, value)
-    console.log(queryString)
     this.props.fetchData(e, queryString)
   }
-
-  handleStartChange(e) {
-    const name = e.target.name;
-    const value = e.target.value;
-    const endDate = formatDate(this.props.endDate);
-    this.props.fetchData(e, `?startDate=${value}&endDate=${endDate}`)
-  }
-
-  handleEndChange(e) {
-    const name = e.target.name;
-    const value = e.target.value;
-    const startDate = formatDate(this.props.startDate);
-    this.props.fetchData(e, `?startDate=${startDate}&endDate=${value}`)
-  }
-
-  handleCategoryChange(e) {
-    const value = e.target.value;
-    let cats = this.props.selectedCategories;
-    const selected = cats.includes(value);
-    if (selected) {
-      cats = cats.filter(c => c != value);
-    } else {
-      cats.push(value);
-    }
-    const queryString = cats.join("&categories=");
-    console.log(queryString);
-    this.props.fetchData(e, `?categories=${queryString}`)
-  }
-
 }
 
 // budget over time
