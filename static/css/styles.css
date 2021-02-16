@@ -9,7 +9,7 @@ table, th, td {
     border-collapse: collapse;
     padding: 4px 32px 4px 4px;
 }
-input, button {
+input, button, option {
     font-family: verdana;
     font-size: 12px;
 }
@@ -18,6 +18,9 @@ input[type=text] {
 }
 input[type=submit] {
     margin-top: 8px;
+}
+h1 {
+  margin-top:32px;
 }
 h2 {
     margin-top: 1.5em;
@@ -31,4 +34,18 @@ h2 {
     display: inline-block;;
     margin-bottom: 8px;
     width: 50px;
+}
+select[multiple] {
+    vertical-align: text-top;
+    min-width: 148px;
+}
+select[multiple]:focus option:checked {
+  background: #009999;
+}
+form {
+  margin: 8px 0;
+}
+label {
+  display: inline-block;
+  min-width:128px
 }

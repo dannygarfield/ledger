@@ -26,7 +26,7 @@ class TableRows extends React.Component {
       rows.push(
         <EntryRow
           entry={entry}
-          key={index}/>
+          key={index} />
       );
     });
 
@@ -56,21 +56,8 @@ class Header extends React.Component {
 class DateFilters extends React.Component {
   constructor(props) {
     super(props);
-  }
-
-  handleStartChange = this.handleStartChange.bind(this);
-  handleEndChange = this.handleEndChange.bind(this);
-
-  handleStartChange(e) {
-    const value = e.target.value;
-    const endDate = formatDate(this.props.endDate);
-    this.props.fetchEntries(e, `/budget.json?startDate=${value}&endDate=${endDate}`)
-  }
-
-  handleEndChange(e) {
-    const value = e.target.value;
-    const startDate = formatDate(this.props.startDate);
-    this.props.fetchEntries(e, `/budget.json?startDate=${startDate}&endDate=${value}`)
+    this.handleStartChange = this.handleStartChange.bind(this);
+    this.handleEndChange = this.handleEndChange.bind(this);
   }
 
   render() {
@@ -91,18 +78,24 @@ class DateFilters extends React.Component {
           name="endDate"
           value={endDate}
           onChange={this.handleEndChange} />
-        <br />
-        <input type="submit" value="Submit" />
       </form>
     );
+  }
+
+  handleStartChange(e) {
+    const value = e.target.value;
+    const endDate = formatDate(this.props.endDate);
+    this.props.fetchData(e, `?startDate=${value}&endDate=${endDate}`)
+  }
+
+  handleEndChange(e) {
+    const value = e.target.value;
+    const startDate = formatDate(this.props.startDate);
+    this.props.fetchData(e, `?startDate=${startDate}&endDate=${value}`)
   }
 }
 
 class BudgetTable extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-
   render() {
     return (
       <div>
@@ -110,7 +103,7 @@ class BudgetTable extends React.Component {
         <DateFilters
           startDate={this.props.startDate}
           endDate={this.props.endDate}
-          fetchEntries={this.props.fetchEntries}/>
+          fetchData={this.props.fetchEntries} />
         <br />
         <table>
           <Header />
@@ -126,6 +119,7 @@ class BudgetTable extends React.Component {
 class EntryForm extends React.Component {
   constructor(props) {
     super(props);
+    this.handleInputChange = this.handleInputChange.bind(this)
     this.state = {
       entryDate: '',
       amount: '',
@@ -134,7 +128,44 @@ class EntryForm extends React.Component {
     };
   }
 
-  handleInputChange = this.handleInputChange.bind(this)
+  render() {
+    return (
+      <div>
+        <h2>Insert a budget entry</h2>
+        <form onSubmit={this.handleSubmitEntry}>
+          <label className="entry-form">entry date</label>
+          <input
+            name="entryDate"
+            type="text"
+            value={this.state.entryDate}
+            onChange={this.handleInputChange} />
+          <br />
+          <label className="entry-form">amount</label>
+          <input
+            name="amount"
+            type="text"
+            value={this.state.amount}
+            onChange={this.handleInputChange}/>
+          <br />
+          <label className="entry-form">category</label>
+          <input
+            name="category"
+            type="text"
+            value={this.state.category}
+            onChange={this.handleInputChange} />
+          <br />
+          <label className="entry-form">description</label>
+          <input
+            name="description"
+            type="text"
+            value={this.state.description}
+            onChange={this.handleInputChange} />
+          <br />
+          <input type="submit" value="Submit" />
+        </form>
+      </div>
+    );
+  }
 
   handleInputChange(e) {
     const name = e.target.name
@@ -180,45 +211,6 @@ class EntryForm extends React.Component {
       })
       .catch( err => console.log('something went wrong...:', err) )
   }
-
-  render() {
-    return (
-      <div>
-        <h2>Insert a budget entry</h2>
-        <form onSubmit={this.handleSubmitEntry}>
-          <label className="entry-form">entry date</label>
-          <input
-            name="entryDate"
-            type="text"
-            value={this.state.entryDate}
-            onChange={this.handleInputChange} />
-          <br />
-          <label className="entry-form">amount</label>
-          <input
-            name="amount"
-            type="text"
-            value={this.state.amount}
-            onChange={this.handleInputChange}/>
-          <br />
-          <label className="entry-form">category</label>
-          <input
-            name="category"
-            type="text"
-            value={this.state.category}
-            onChange={this.handleInputChange} />
-          <br />
-          <label className="entry-form">description</label>
-          <input
-            name="description"
-            type="text"
-            value={this.state.description}
-            onChange={this.handleInputChange} />
-          <br />
-          <input type="submit" value="Submit" />
-        </form>
-      </div>
-    );
-  }
 }
 
 class BudgetPage extends React.Component {
@@ -235,7 +227,7 @@ class BudgetPage extends React.Component {
     } else {
       return (
         <div>
-          <h1>welcome!</h1>
+          <h1>Budget Entries</h1>
           <EntryForm addEntry={this.handleAddEntry}/>
           <BudgetTable
             startDate={this.state.startDate}
@@ -255,17 +247,19 @@ class BudgetPage extends React.Component {
       });
   }
 
-  handleFetchEntries = (e, fetchUrl) => {
-    e.preventDefault();
-    console.log(`fetching entries ... fetch url: ${fetchUrl}`);
-    fetch(fetchUrl)
+  handleFetchEntries = (e, queryString) => {
+    if (e) {
+      e.preventDefault();
+    }
+    console.log(`fetching entries at: /budget.json${queryString}`);
+    fetch(`/budget.json${queryString}`)
       .then(response => response.json())
       .then(responseData => {
         console.log("... success!");
         console.log(responseData);
         this.setState( prevState => ({
-          startDate: responseData['Start'],
-          endDate: responseData['End'],
+          startDate: responseData['StartDate'],
+          endDate: responseData['EndDate'],
           entries: responseData['Entries']
         }));
       })
@@ -275,26 +269,175 @@ class BudgetPage extends React.Component {
   }
 
   componentDidMount() {
-    console.log("componentDidMount. this.state.startDate:" + this.state.startDate)
-    fetch('/budget.json')
-      .then(response => response.json())
-      .then(responseData => {
-        console.log("... success!");
-        console.log(responseData);
-        this.setState( prevState => ({
-          startDate: responseData['Start'],
-          endDate: responseData['End'],
-          entries: responseData['Entries']
-        }));
-      })
-      .catch(error => {
-        console.log('Error fetching and parsing data', error);
-      });
+    this.handleFetchEntries(null, '');
+  }
+}
+
+class Category extends React.Component {
+  render() {
+    return (
+      <option className={this.props.selectedClass} value={this.props.name}>
+          {this.props.name}
+      </option>
+    );
+  }
+}
+
+class CategoryFilter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleCategoryChange = this.handleCategoryChange.bind(this);
+  }
+
+  render() {
+    const cats = this.props.selectedCategories;
+    const categoryRows = []
+    this.props.allCategories.forEach((cat, index) => {
+      let selectedClass = cats.includes(cat) ? "selected" : null;
+      categoryRows.push(
+        <Category
+          key={index}
+          name={cat}
+          selectedClass={selectedClass} />
+      );
+    })
+    return (
+      <form>
+        <label>Choose categories</label>
+        <select
+          className='categories'
+          multiple={true}
+          value={this.props.selectedCategories}
+          size={10}
+          onChange={this.handleCategoryChange}>
+        {categoryRows}
+        </select>
+      </form>
+    )
+  }
+
+  handleCategoryChange(e) {
+    const value = e.target.value;
+    let cats = this.props.selectedCategories;
+    const selected = cats.includes(value);
+    if (selected) {
+      cats = cats.filter(c => c != value);
+    } else {
+      cats.push(value);
+    }
+    const queryString = cats.join("&categories=");
+    console.log(queryString);
+    this.props.fetchData(e, `?categories=${queryString}`)
+  }
+}
+
+class IntervalFilter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleChange = this.handleChange.bind(this);
+  }
+
+  render() {
+    return (
+      <form>
+        <label>Interval</label>
+        <input type="number" value={this.props.interval}></input>
+      </form>
+    );
+  }
+
+  handleChange(e) {
+    const value = e.target.value;
+    console.log(e)
+  }
+
+}
+
+class Filters extends React.Component {
+  render() {
+    return (
+      <div>
+        <DateFilters
+          startDate={this.props.startDate}
+          endDate={this.props.endDate}
+          fetchData={this.props.fetchData} />
+        <CategoryFilter
+          selectedCategories={this.props.selectedCategories}
+          allCategories={this.props.allCategories}
+          fetchData={this.props.fetchData} />
+        <IntervalFilter />
+      </div>
+    );
+  }
+}
+
+// budget over time
+class BudgetOverTimePage extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      loaded: false
+    }
+  }
+  render() {
+    if (!this.state.loaded) {
+      return null
+    }
+    return (
+      <div>
+      <h1>Budget Over Time</h1>
+        <Filters
+          startDate={this.state.startDate}
+          endDate={this.state.endDate}
+          selectedCategories={this.state.selectedCategories}
+          allCategories={this.state.allCategories}
+          fetchData={this.handleFetchBudgetOverTime} />
+      </div>
+    );
+  }
+
+  handleFetchBudgetOverTime = (e, queryString) => {
+    if (e) {
+      e.preventDefault();
+    }
+    console.log(`fetching series at: /budgetseries.json${queryString}`);
+    fetch(`/budgetseries.json${queryString}`)
+    .then( response => response.json() )
+    .then( responseData => {
+      console.log(responseData);
+      this.setState (prevState => ({
+        startDate: responseData['StartDate'],
+        endDate: responseData['EndDate'],
+        allCategories: responseData['AllCategories'],
+        selectedCategories: responseData['Table']['BucketHeaders'],
+        queryString: queryString,
+        loaded: true
+      }));
+    })
+    .catch(error => {
+      console.log('Error fetching and parsing data', error);
+    });
+  }
+
+  componentDidMount() {
+    this.handleFetchBudgetOverTime(null, '')
+  }
+}
+
+class FinanceApp extends React.Component {
+  render() {
+    return (
+      <div>
+        <BudgetOverTimePage />
+        <BudgetPage />
+      </div>
+    );
   }
 }
 
 function formatDate(inputDate) {
-  let [month, day, year] = new Date(inputDate).toLocaleDateString("en-US").split("/");
+  let options = { timeZone: 'UTC' };
+  let [month, day, year] = new Date(inputDate).toLocaleDateString("en-US", options).split("/");
   if (month.length < 2) {
       month = '0' + month;
   }
@@ -305,6 +448,6 @@ function formatDate(inputDate) {
 }
 
 ReactDOM.render(
-  <BudgetPage />,
+  <FinanceApp />,
   document.querySelector('#container')
 );

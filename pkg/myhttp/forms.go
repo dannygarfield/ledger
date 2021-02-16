@@ -48,7 +48,7 @@ func SetEndDate(tx *sql.Tx, values url.Values) (time.Time, error) {
 
 func SetTimeInterval(values url.Values) (int, error) {
 	formInterval := values.Get("interval")
-	if formInterval == "" {
+	if formInterval == "" && formInterval != "undefined" {
 		return 1, nil
 	}
 	interval, err := strconv.Atoi(formInterval)
@@ -63,7 +63,8 @@ func SetBudgetCategories(tx *sql.Tx, values url.Values) ([]string, []string, err
 	if err != nil {
 		return nil, nil, fmt.Errorf("Calling budget.GetCategories (%v)", err)
 	}
-	if values.Get("categories") != "" {
+	formCategories := values.Get("categories")
+	if formCategories != "" && formCategories != "undefined" {
 		formCategories := values["categories"]
 		// fmt.Println("formCategories:", formCategories)
 		// fmt.Println("values.Get():", values.Get("categories"))

@@ -152,20 +152,6 @@ var DateFilters = function (_React$Component4) {
   }
 
   _createClass(DateFilters, [{
-    key: 'handleStartChange',
-    value: function handleStartChange(e) {
-      var value = e.target.value;
-      var endDate = formatDate(this.props.endDate);
-      this.props.fetchEntries(e, '/budget.json?startDate=' + value + '&endDate=' + endDate);
-    }
-  }, {
-    key: 'handleEndChange',
-    value: function handleEndChange(e) {
-      var value = e.target.value;
-      var startDate = formatDate(this.props.startDate);
-      this.props.fetchEntries(e, '/budget.json?startDate=' + startDate + '&endDate=' + value);
-    }
-  }, {
     key: 'render',
     value: function render() {
       var startDate = formatDate(this.props.startDate);
@@ -193,10 +179,22 @@ var DateFilters = function (_React$Component4) {
           type: 'date',
           name: 'endDate',
           value: endDate,
-          onChange: this.handleEndChange }),
-        React.createElement('br', null),
-        React.createElement('input', { type: 'submit', value: 'Submit' })
+          onChange: this.handleEndChange })
       );
+    }
+  }, {
+    key: 'handleStartChange',
+    value: function handleStartChange(e) {
+      var value = e.target.value;
+      var endDate = formatDate(this.props.endDate);
+      this.props.fetchData(e, '?startDate=' + value + '&endDate=' + endDate);
+    }
+  }, {
+    key: 'handleEndChange',
+    value: function handleEndChange(e) {
+      var value = e.target.value;
+      var startDate = formatDate(this.props.startDate);
+      this.props.fetchData(e, '?startDate=' + startDate + '&endDate=' + value);
     }
   }]);
 
@@ -206,10 +204,10 @@ var DateFilters = function (_React$Component4) {
 var BudgetTable = function (_React$Component5) {
   _inherits(BudgetTable, _React$Component5);
 
-  function BudgetTable(props) {
+  function BudgetTable() {
     _classCallCheck(this, BudgetTable);
 
-    return _possibleConstructorReturn(this, (BudgetTable.__proto__ || Object.getPrototypeOf(BudgetTable)).call(this, props));
+    return _possibleConstructorReturn(this, (BudgetTable.__proto__ || Object.getPrototypeOf(BudgetTable)).apply(this, arguments));
   }
 
   _createClass(BudgetTable, [{
@@ -226,7 +224,7 @@ var BudgetTable = function (_React$Component5) {
         React.createElement(DateFilters, {
           startDate: this.props.startDate,
           endDate: this.props.endDate,
-          fetchEntries: this.props.fetchEntries }),
+          fetchData: this.props.fetchEntries }),
         React.createElement('br', null),
         React.createElement(
           'table',
@@ -250,8 +248,6 @@ var EntryForm = function (_React$Component6) {
     _classCallCheck(this, EntryForm);
 
     var _this6 = _possibleConstructorReturn(this, (EntryForm.__proto__ || Object.getPrototypeOf(EntryForm)).call(this, props));
-
-    _this6.handleInputChange = _this6.handleInputChange.bind(_this6);
 
     _this6.handleSubmitEntry = function (e) {
       e.preventDefault();
@@ -294,6 +290,7 @@ var EntryForm = function (_React$Component6) {
       });
     };
 
+    _this6.handleInputChange = _this6.handleInputChange.bind(_this6);
     _this6.state = {
       entryDate: '',
       amount: '',
@@ -304,13 +301,6 @@ var EntryForm = function (_React$Component6) {
   }
 
   _createClass(EntryForm, [{
-    key: 'handleInputChange',
-    value: function handleInputChange(e) {
-      var name = e.target.name;
-      var value = e.target.value;
-      this.setState(_defineProperty({}, name, value));
-    }
-  }, {
     key: 'render',
     value: function render() {
       return React.createElement(
@@ -372,6 +362,13 @@ var EntryForm = function (_React$Component6) {
         )
       );
     }
+  }, {
+    key: 'handleInputChange',
+    value: function handleInputChange(e) {
+      var name = e.target.name;
+      var value = e.target.value;
+      this.setState(_defineProperty({}, name, value));
+    }
   }]);
 
   return EntryForm;
@@ -393,18 +390,20 @@ var BudgetPage = function (_React$Component7) {
       });
     };
 
-    _this7.handleFetchEntries = function (e, fetchUrl) {
-      e.preventDefault();
-      console.log('fetching entries ... fetch url: ' + fetchUrl);
-      fetch(fetchUrl).then(function (response) {
+    _this7.handleFetchEntries = function (e, queryString) {
+      if (e) {
+        e.preventDefault();
+      }
+      console.log('fetching entries at: /budget.json' + queryString);
+      fetch('/budget.json' + queryString).then(function (response) {
         return response.json();
       }).then(function (responseData) {
         console.log("... success!");
         console.log(responseData);
         _this7.setState(function (prevState) {
           return {
-            startDate: responseData['Start'],
-            endDate: responseData['End'],
+            startDate: responseData['StartDate'],
+            endDate: responseData['EndDate'],
             entries: responseData['Entries']
           };
         });
@@ -431,7 +430,7 @@ var BudgetPage = function (_React$Component7) {
           React.createElement(
             'h1',
             null,
-            'welcome!'
+            'Budget Entries'
           ),
           React.createElement(EntryForm, { addEntry: this.handleAddEntry }),
           React.createElement(BudgetTable, {
@@ -445,32 +444,271 @@ var BudgetPage = function (_React$Component7) {
   }, {
     key: 'componentDidMount',
     value: function componentDidMount() {
-      var _this8 = this;
-
-      console.log("componentDidMount. this.state.startDate:" + this.state.startDate);
-      fetch('/budget.json').then(function (response) {
-        return response.json();
-      }).then(function (responseData) {
-        console.log("... success!");
-        console.log(responseData);
-        _this8.setState(function (prevState) {
-          return {
-            startDate: responseData['Start'],
-            endDate: responseData['End'],
-            entries: responseData['Entries']
-          };
-        });
-      }).catch(function (error) {
-        console.log('Error fetching and parsing data', error);
-      });
+      this.handleFetchEntries(null, '');
     }
   }]);
 
   return BudgetPage;
 }(React.Component);
 
+var Category = function (_React$Component8) {
+  _inherits(Category, _React$Component8);
+
+  function Category() {
+    _classCallCheck(this, Category);
+
+    return _possibleConstructorReturn(this, (Category.__proto__ || Object.getPrototypeOf(Category)).apply(this, arguments));
+  }
+
+  _createClass(Category, [{
+    key: 'render',
+    value: function render() {
+      return React.createElement(
+        'option',
+        { className: this.props.selectedClass, value: this.props.name },
+        this.props.name
+      );
+    }
+  }]);
+
+  return Category;
+}(React.Component);
+
+var CategoryFilter = function (_React$Component9) {
+  _inherits(CategoryFilter, _React$Component9);
+
+  function CategoryFilter(props) {
+    _classCallCheck(this, CategoryFilter);
+
+    var _this9 = _possibleConstructorReturn(this, (CategoryFilter.__proto__ || Object.getPrototypeOf(CategoryFilter)).call(this, props));
+
+    _this9.handleCategoryChange = _this9.handleCategoryChange.bind(_this9);
+    return _this9;
+  }
+
+  _createClass(CategoryFilter, [{
+    key: 'render',
+    value: function render() {
+      var cats = this.props.selectedCategories;
+      var categoryRows = [];
+      this.props.allCategories.forEach(function (cat, index) {
+        var selectedClass = cats.includes(cat) ? "selected" : null;
+        categoryRows.push(React.createElement(Category, {
+          key: index,
+          name: cat,
+          selectedClass: selectedClass }));
+      });
+      return React.createElement(
+        'form',
+        null,
+        React.createElement(
+          'label',
+          null,
+          'Choose categories'
+        ),
+        React.createElement(
+          'select',
+          {
+            className: 'categories',
+            multiple: true,
+            value: this.props.selectedCategories,
+            size: 10,
+            onChange: this.handleCategoryChange },
+          categoryRows
+        )
+      );
+    }
+  }, {
+    key: 'handleCategoryChange',
+    value: function handleCategoryChange(e) {
+      var value = e.target.value;
+      var cats = this.props.selectedCategories;
+      var selected = cats.includes(value);
+      if (selected) {
+        cats = cats.filter(function (c) {
+          return c != value;
+        });
+      } else {
+        cats.push(value);
+      }
+      var queryString = cats.join("&categories=");
+      console.log(queryString);
+      this.props.fetchData(e, '?categories=' + queryString);
+    }
+  }]);
+
+  return CategoryFilter;
+}(React.Component);
+
+var IntervalFilter = function (_React$Component10) {
+  _inherits(IntervalFilter, _React$Component10);
+
+  function IntervalFilter(props) {
+    _classCallCheck(this, IntervalFilter);
+
+    var _this10 = _possibleConstructorReturn(this, (IntervalFilter.__proto__ || Object.getPrototypeOf(IntervalFilter)).call(this, props));
+
+    _this10.handleChange = _this10.handleChange.bind(_this10);
+    return _this10;
+  }
+
+  _createClass(IntervalFilter, [{
+    key: 'render',
+    value: function render() {
+      return React.createElement(
+        'form',
+        null,
+        React.createElement(
+          'label',
+          null,
+          'Interval'
+        ),
+        React.createElement('input', { type: 'number', value: this.props.interval })
+      );
+    }
+  }, {
+    key: 'handleChange',
+    value: function handleChange(e) {
+      var value = e.target.value;
+      console.log(e);
+    }
+  }]);
+
+  return IntervalFilter;
+}(React.Component);
+
+var Filters = function (_React$Component11) {
+  _inherits(Filters, _React$Component11);
+
+  function Filters() {
+    _classCallCheck(this, Filters);
+
+    return _possibleConstructorReturn(this, (Filters.__proto__ || Object.getPrototypeOf(Filters)).apply(this, arguments));
+  }
+
+  _createClass(Filters, [{
+    key: 'render',
+    value: function render() {
+      return React.createElement(
+        'div',
+        null,
+        React.createElement(DateFilters, {
+          startDate: this.props.startDate,
+          endDate: this.props.endDate,
+          fetchData: this.props.fetchData }),
+        React.createElement(CategoryFilter, {
+          selectedCategories: this.props.selectedCategories,
+          allCategories: this.props.allCategories,
+          fetchData: this.props.fetchData }),
+        React.createElement(IntervalFilter, null)
+      );
+    }
+  }]);
+
+  return Filters;
+}(React.Component);
+
+// budget over time
+
+
+var BudgetOverTimePage = function (_React$Component12) {
+  _inherits(BudgetOverTimePage, _React$Component12);
+
+  function BudgetOverTimePage(props) {
+    _classCallCheck(this, BudgetOverTimePage);
+
+    var _this12 = _possibleConstructorReturn(this, (BudgetOverTimePage.__proto__ || Object.getPrototypeOf(BudgetOverTimePage)).call(this, props));
+
+    _this12.handleFetchBudgetOverTime = function (e, queryString) {
+      if (e) {
+        e.preventDefault();
+      }
+      console.log('fetching series at: /budgetseries.json' + queryString);
+      fetch('/budgetseries.json' + queryString).then(function (response) {
+        return response.json();
+      }).then(function (responseData) {
+        console.log(responseData);
+        _this12.setState(function (prevState) {
+          return {
+            startDate: responseData['StartDate'],
+            endDate: responseData['EndDate'],
+            allCategories: responseData['AllCategories'],
+            selectedCategories: responseData['Table']['BucketHeaders'],
+            queryString: queryString,
+            loaded: true
+          };
+        });
+      }).catch(function (error) {
+        console.log('Error fetching and parsing data', error);
+      });
+    };
+
+    _this12.state = {
+      loaded: false
+    };
+    return _this12;
+  }
+
+  _createClass(BudgetOverTimePage, [{
+    key: 'render',
+    value: function render() {
+      if (!this.state.loaded) {
+        return null;
+      }
+      return React.createElement(
+        'div',
+        null,
+        React.createElement(
+          'h1',
+          null,
+          'Budget Over Time'
+        ),
+        React.createElement(Filters, {
+          startDate: this.state.startDate,
+          endDate: this.state.endDate,
+          selectedCategories: this.state.selectedCategories,
+          allCategories: this.state.allCategories,
+          fetchData: this.handleFetchBudgetOverTime })
+      );
+    }
+  }, {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.handleFetchBudgetOverTime(null, '');
+    }
+  }]);
+
+  return BudgetOverTimePage;
+}(React.Component);
+
+var FinanceApp = function (_React$Component13) {
+  _inherits(FinanceApp, _React$Component13);
+
+  function FinanceApp() {
+    _classCallCheck(this, FinanceApp);
+
+    return _possibleConstructorReturn(this, (FinanceApp.__proto__ || Object.getPrototypeOf(FinanceApp)).apply(this, arguments));
+  }
+
+  _createClass(FinanceApp, [{
+    key: 'render',
+    value: function render() {
+      return React.createElement(
+        'div',
+        null,
+        React.createElement(BudgetOverTimePage, null),
+        React.createElement(BudgetPage, null)
+      );
+    }
+  }]);
+
+  return FinanceApp;
+}(React.Component);
+
 function formatDate(inputDate) {
-  var _toLocaleDateString$s = new Date(inputDate).toLocaleDateString("en-US").split("/"),
+  var options = { timeZone: 'UTC' };
+
+  var _toLocaleDateString$s = new Date(inputDate).toLocaleDateString("en-US", options).split("/"),
       _toLocaleDateString$s2 = _slicedToArray(_toLocaleDateString$s, 3),
       month = _toLocaleDateString$s2[0],
       day = _toLocaleDateString$s2[1],
@@ -485,4 +723,4 @@ function formatDate(inputDate) {
   return [year, month, day].join("-");
 }
 
-ReactDOM.render(React.createElement(BudgetPage, null), document.querySelector('#container'));
+ReactDOM.render(React.createElement(FinanceApp, null), document.querySelector('#container'));

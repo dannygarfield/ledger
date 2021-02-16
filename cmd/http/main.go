@@ -146,16 +146,7 @@ func (s *server) uploadCsvHandler(w http.ResponseWriter, r *http.Request) {
 	mytemplate.Insert(w, r)
 }
 
-func (s *server) handleBudgetOverTime(w http.ResponseWriter, r *http.Request) {
-	utils.Tx(s.db, r, func(tx *sql.Tx) error {
-		err := myhttp.HandleBudgetOverTime(tx, r, w)
-		if err != nil {
-			return fmt.Errorf("Could not call myhttp.HandleBudgetList: %v", err)
-		}
-		return nil
-	})
-}
-
+// begin react handlers
 func (s *server) appHandler(w http.ResponseWriter, r *http.Request) {
 	err := func() error {
 		// parse html template
@@ -186,13 +177,13 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 	})
 	//
 	group := struct {
-		Start   time.Time
-		End     time.Time
-		Entries []budget.Entry
+		StartDate time.Time
+		EndDate   time.Time
+		Entries   []budget.Entry
 	}{
-		Start:   startDate,
-		End:     endDate,
-		Entries: entries,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Entries:   entries,
 	}
 	//
 	output, err := json.Marshal(group)
@@ -209,6 +200,57 @@ func (s *server) getBudget(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, bytes.NewBuffer(output)); err != nil {
 		log.Printf("writing response: %v", err)
 	}
+}
+
+// get budget over time
+func (s *server) getBudgetSeries(w http.ResponseWriter, r *http.Request) {
+	// allocate variables
+	var startDate time.Time
+	var endDate time.Time
+	var allCategories []string
+	var filterCategories []string
+	var timeInterval int
+	var spendSummary []map[string]usd.USD
+	//
+	utils.Tx(s.db, r, func(tx *sql.Tx) (err error) {
+		q := r.URL.Query()
+		startDate, err = myhttp.SetStartDate(tx, q)
+		endDate, err = myhttp.SetEndDate(tx, q)
+		timeInterval, err = myhttp.SetTimeInterval(q)
+		filterCategories, allCategories, err = myhttp.SetBudgetCategories(tx, q)
+		spendSummary, err = budget.SummarizeSpendsOverTime(tx, filterCategories, startDate, endDate, timeInterval)
+		return err
+	})
+	budgetOverTimeTable := budget.MakePlot(spendSummary, startDate, timeInterval)
+
+	//
+	group := struct {
+		StartDate time.Time
+		EndDate   time.Time
+		AllCategories []string
+		Table   budget.PlotData
+	}{
+		StartDate: startDate,
+		EndDate:   endDate,
+		AllCategories:   allCategories,
+		Table: *budgetOverTimeTable,
+	}
+	//
+	output, err := json.Marshal(group)
+	if err != nil {
+		log.Printf("marshaling entries: %v", err)
+	}
+	// os.Stdout.Write(out)
+	//
+	w.Header().Add("content-type", "application/json")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Add("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+	//
+	if _, err := io.Copy(w, bytes.NewBuffer(output)); err != nil {
+		log.Printf("writing response: %v", err)
+	}
+
 }
 
 func (s *server) insertBudgetViaJson(w http.ResponseWriter, r *http.Request) {
@@ -271,9 +313,10 @@ func main() {
 	//
 	http.HandleFunc("/app", s.appHandler)
 	http.HandleFunc("/budget.json", s.getBudget)
+	http.HandleFunc("/budgetseries.json", s.getBudgetSeries)
 	http.HandleFunc("/insert.json", s.insertBudgetViaJson)
 	//
-	http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
+	// http.HandleFunc("/budgetseries", s.handleBudgetOverTime)
 	//
 	http.HandleFunc("/ledger", s.ledgerHandler)
 	http.HandleFunc("/balance", s.balanceOverTimeHandler)
